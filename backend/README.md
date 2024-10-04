@@ -1,5 +1,4 @@
-<div align="center">
-   
+
 ![CYPHER TRANSPARENT](https://github.com/user-attachments/assets/8c84f63d-711c-4e3b-889d-608922d7467c)
 
 
