@@ -1,27 +1,34 @@
-// backend_cli/commands/authCommands.js
+const { register, login, verifyPin, resetPassword, logout } = require('../../src/controllers/authController'); // Import backend functions directly
+const logger = require('../utils/logger'); // Import logger utility
 
-const { makeApiRequest } = require('../utils/apiRequest');
-const { promptForInput } = require('../utils/promptHelper');
-const { storeTokens } = require('../utils/authHelper');
-const logger = require('../utils/logger');
-require('dotenv').config();
+// Helper function to prompt user for input
+const promptForInput = async (message, hidden = false) => {
+  // Assume this is a function that prompts user input
+  // hidden flag is for sensitive data like passwords
+};
 
-const BASE_URL = process.env.API_BASE_URL;
-
-// Register a new user
+// Register User Command
 const registerUser = async () => {
   try {
     const cypherTag = await promptForInput('Enter your CypherTag:');
-    const password = await promptForInput('Enter your password:', true); // Masked input for password
-    const pin = await promptForInput('Enter your 6-digit PIN:', true); // Masked input for PIN
+    const password = await promptForInput('Enter your password:', true);
+    const pin = await promptForInput('Enter your 6-digit PIN:', true);
 
-    const response = await makeApiRequest('POST', `${BASE_URL}/api/auth/register`, {
-      cypherTag,
-      password,
-      pin,
-    });
+    const req = { body: { cypherTag, password, pin } };
+    const res = {
+      status: (code) => ({
+        json: (data) => {
+          console.log(`Status: ${code}, Response:`, data);
+        },
+      }),
+    };
+    const next = (error) => {
+      if (error) {
+        throw error;
+      }
+    };
 
-    console.log('User registered successfully:', response.message);
+    await register(req, res, next);
     logger.logInfo('User registration successful');
   } catch (error) {
     console.error('Failed to register user:', error.message);
@@ -29,88 +36,124 @@ const registerUser = async () => {
   }
 };
 
-// User login (Step 1: CypherTag/Password)
+// Login User Command
 const loginUser = async () => {
   try {
     const cypherTag = await promptForInput('Enter your CypherTag:');
-    const password = await promptForInput('Enter your password:', true); // Masked input for password
+    const password = await promptForInput('Enter your password:', true);
+    const cypherEncryptionOrigin = await promptForInput('Enter Cypher Encryption Origin (if applicable):');
 
-    const response = await makeApiRequest('POST', `${BASE_URL}/api/auth/login`, {
-      cypherTag,
-      password,
-    });
+    const req = { body: { cypherTag, password, cypherEncryptionOrigin } };
+    const res = {
+      status: (code) => ({
+        json: (data) => {
+          console.log(`Status: ${code}, Response:`, data);
+        },
+      }),
+    };
+    const next = (error) => {
+      if (error) {
+        throw error;
+      }
+    };
 
-    console.log(response.message);
-    logger.logInfo('User login successful, awaiting PIN verification');
+    await login(req, res, next);
+    logger.logInfo('User login successful');
   } catch (error) {
-    console.error('Failed to login:', error.message);
+    console.error('Failed to login user:', error.message);
     logger.logCLIError('User login failed', error);
   }
 };
 
-// PIN Verification (Step 2)
-const verifyPin = async () => {
+// Verify PIN Command
+const verifyUserPin = async () => {
   try {
     const uid = await promptForInput('Enter your UID:');
-    const pin = await promptForInput('Enter your 6-digit PIN:', true); // Masked input for PIN
+    const pin = await promptForInput('Enter your PIN:', true);
 
-    const response = await makeApiRequest('POST', `${BASE_URL}/api/auth/verify-pin`, {
-      uid,
-      pin,
-    });
+    const req = { body: { uid, pin } };
+    const res = {
+      status: (code) => ({
+        json: (data) => {
+          console.log(`Status: ${code}, Response:`, data);
+        },
+      }),
+    };
+    const next = (error) => {
+      if (error) {
+        throw error;
+      }
+    };
 
-    console.log('Login verified. Token:', response.accessToken);
+    await verifyPin(req, res, next);
     logger.logInfo('PIN verification successful');
-
-    // Store the tokens in a secure location
-    storeTokens({
-      accessToken: response.accessToken,
-      refreshToken: response.refreshToken,
-    });
   } catch (error) {
     console.error('Failed to verify PIN:', error.message);
     logger.logCLIError('PIN verification failed', error);
   }
 };
 
-// Refresh Access Token
-const refreshToken = async () => {
+// Reset Password Command
+const resetUserPassword = async () => {
   try {
-    const refreshTokenInput = await promptForInput('Enter your refresh token:');
+    const uid = await promptForInput('Enter your UID:');
+    const pin = await promptForInput('Enter your PIN:', true);
+    const newPassword = await promptForInput('Enter your new password:', true);
 
-    const response = await makeApiRequest('POST', `${BASE_URL}/api/auth/refresh-token`, {
-      refreshToken: refreshTokenInput,
-    });
+    const req = { body: { uid, pin, newPassword } };
+    const res = {
+      status: (code) => ({
+        json: (data) => {
+          console.log(`Status: ${code}, Response:`, data);
+        },
+      }),
+    };
+    const next = (error) => {
+      if (error) {
+        throw error;
+      }
+    };
 
-    console.log('New Access Token:', response.accessToken);
-    logger.logInfo('Access token refreshed successfully');
+    await resetPassword(req, res, next);
+    logger.logInfo('Password reset successful');
   } catch (error) {
-    console.error('Failed to refresh token:', error.message);
-    logger.logCLIError('Token refresh failed', error);
+    console.error('Failed to reset password:', error.message);
+    logger.logCLIError('Password reset failed', error);
   }
 };
 
-// User logout
+// Logout User Command
 const logoutUser = async () => {
   try {
     const uid = await promptForInput('Enter your UID:');
 
-    await makeApiRequest('POST', `${BASE_URL}/api/auth/logout`, {
-      uid,
-    });
+    const req = { body: { uid } };
+    const res = {
+      status: (code) => ({
+        json: (data) => {
+          console.log(`Status: ${code}, Response:`, data);
+        },
+      }),
+    };
+    const next = (error) => {
+      if (error) {
+        throw error;
+      }
+    };
 
-    console.log('User logged out successfully');
+    await logout(req, res, next);
     logger.logInfo('User logout successful');
   } catch (error) {
-    console.error('Failed to logout:', error.message);
+    console.error('Failed to logout user:', error.message);
     logger.logCLIError('User logout failed', error);
   }
 };
 
+// Export commands
 module.exports = {
   registerUser,
   loginUser,
-  verifyPin,
-  refreshToken,
+  verifyUserPin,
+  resetUserPassword,
   logoutUser,
 };

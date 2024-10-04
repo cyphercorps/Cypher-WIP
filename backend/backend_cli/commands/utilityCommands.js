@@ -1,5 +1,3 @@
-// backend_cli/commands/utilityCommands.js
-
 const { logInfo, logCLIError } = require('../utils/logger');
 const { promptForInput } = require('../utils/promptHelper');
 const { listDirectoryFiles, readFileContents } = require('../utils/fileUtils');
@@ -27,7 +25,8 @@ const viewLogFile = async () => {
     const logFilePath = `../../logs/${logFileName}`;
     const logData = readFileContents(logFilePath);
 
-    console.log(`Contents of ${logFileName}:\n`);
+    console.log(`Contents of ${logFileName}:
+`);
     console.log(logData);
     logInfo(`Displayed contents of log file: ${logFileName}`);
   } catch (error) {
