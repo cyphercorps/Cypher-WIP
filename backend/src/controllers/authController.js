@@ -124,7 +124,7 @@ exports.login = async (req, res, next) => {
     }
 
     // Proceed to the next step (PIN verification)
-    res.status(200).json({ message: 'Login successful, please verify your PIN' });
+    res.status(200).json({ message: 'Login successful, please verify your PIN', uid: userRecord.uid });
   } catch (error) {
     next(ApiError.unauthorized('Authentication failed', error.message));
   }
@@ -162,7 +162,7 @@ exports.verifyPin = async (req, res, next) => {
     });
 
     logger.info(`PIN verified successfully for UID: ${uid}`);
-    res.status(200).json({ accessToken, refreshToken });
+    res.status(200).json({ accessToken, refreshToken, uid });
   } catch (error) {
     logger.error(`PIN verification failed for UID: ${uid} - Error: ${error.message}`);
     next(ApiError.internal('PIN verification failed', error.message));
@@ -242,7 +242,6 @@ exports.logout = [verifyToken, async (req, res, next) => {
   try {
     // Invalidate both the access token and the refresh token
     await admin.firestore().collection('users').doc(uid).update({
-      token: null,
       refreshToken: null,
       tokenCreatedAt: null,
       onlineStatus: false,

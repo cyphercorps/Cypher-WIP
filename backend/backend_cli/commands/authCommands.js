@@ -1,11 +1,7 @@
 const { register, login, verifyPin, resetPassword, logout } = require('../../src/controllers/authController'); // Import backend functions directly
 const logger = require('../utils/logger'); // Import logger utility
-
-// Helper function to prompt user for input
-const promptForInput = async (message, hidden = false) => {
-  // Assume this is a function that prompts user input
-  // hidden flag is for sensitive data like passwords
-};
+const { promptForInput } = require('../utils/promptHelper');
+require('dotenv').config();
 
 // Register User Command
 const registerUser = async () => {
@@ -16,8 +12,12 @@ const registerUser = async () => {
 
     const req = { body: { cypherTag, password, pin } };
     const res = {
-      status: (code) => ({
-        json: (data) => {
+    uid: null,
+    status: (code) => ({
+      json: (data) => {
+        if (data.uid) {
+          this.uid = data.uid;
+        }
           console.log(`Status: ${code}, Response:`, data);
         },
       }),
@@ -58,6 +58,9 @@ const loginUser = async () => {
     };
 
     await login(req, res, next);
+    if (res.uid) {
+      console.log(`User ID: ${res.uid}`);
+    }
     logger.logInfo('User login successful');
   } catch (error) {
     console.error('Failed to login user:', error.message);
@@ -153,7 +156,7 @@ const logoutUser = async () => {
 module.exports = {
   registerUser,
   loginUser,
-  verifyUserPin,
+  verifyUserPin, // Updated name here
   resetUserPassword,
   logoutUser,
 };

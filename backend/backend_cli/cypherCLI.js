@@ -104,7 +104,7 @@ const handleAuthCommands = async () => {
       await authCommands.loginUser();
       break;
     case 'Verify PIN':
-      await authCommands.verifyPin();
+      await authCommands.verifyUserPin();
       break;
     case 'Refresh Token':
       await authCommands.refreshToken();
