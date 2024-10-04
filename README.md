@@ -1,211 +1,152 @@
 ![CYPHER TRANSPARENT](https://github.com/user-attachments/assets/7f15a7e1-a210-4867-aab6-fe16b25f08b4)
 
-# Cypher Backend
+# Cypher Project - Work In Progress (WIP)
 
-Welcome to the backend service of **Cypher**, a non-KYC, privacy-first messaging web app. This backend uses Firebase for authentication, data storage, and messaging, while Express.js powers the server API. The backend is responsible for authentication, user management, messaging, and various admin functionalities. Below, you will find detailed instructions to set up, run, and integrate this backend.
+Welcome to the **Cypher** project! Cypher is a non-KYC, privacy-centric messaging platform designed to provide end-to-end encrypted (E2EE) communication, focusing on security, anonymity, and ease of use. This Work In Progress (WIP) README will guide you through the various aspects of the project as it is being developed.
 
 ## Table of Contents
-
-- [Project Overview](#project-overview)
-- [Prerequisites](#prerequisites)
-- [Getting Started](#getting-started)
-- [Environment Configuration](#environment-configuration)
-- [Firebase Setup](#firebase-setup)
-- [Running the Backend](#running-the-backend)
-- [API Documentation](#api-documentation)
-- [Messaging Logic](#messaging-logic)
-- [Admin Features](#admin-features)
-- [Frontend Integration](#frontend-integration)
-- [Security](#security)
+- [Overview](#overview)
+- [Project Components](#project-components)
+- [Technology Stack](#technology-stack)
 - [Directory Structure](#directory-structure)
-- [Logging](#logging)
+- [Features](#features)
+- [Setup Instructions](#setup-instructions)
+- [Backend Overview](#backend-overview)
+- [Frontend Overview](#frontend-overview)
+- [CLI Overview](#cli-overview)
+- [Integration Suggestions](#integration-suggestions)
+- [Future Enhancements](#future-enhancements)
 
-## Project Overview
+## Overview
+Cypher aims to deliver a secure messaging experience without requiring personal information or compromising privacy. By leveraging encryption technologies and modern web tools, Cypher ensures that user data remains confidential while providing a seamless messaging platform.
 
-The Cypher backend is designed to support a highly secure, privacy-focused messaging application. Key features include:
+Key functionalities include:
+- **Non-KYC Registration**: Users can create accounts with just a unique CypherTag and password, maintaining complete anonymity.
+- **End-to-End Encrypted Messaging**: Messages are protected by AES and E2EE encryption, ensuring no one else can read them.
+- **Group and Channel Messaging**: Users can create public and private group chats and channels, with paid options available for business and extended use.
+- **Self-Destructing Messages**: Users can set messages to self-destruct, enhancing privacy and minimizing data storage.
+- **Real-Time Communication**: Leverages Firebase Realtime Database for seamless real-time messaging.
 
-- User registration and login via Firebase.
-- AES and E2EE encryption for secure messaging.
-- Admin capabilities for user management and platform statistics.
-- API to manage conversations, messages, group chats, and channels.
-- Minimalist design inspired by privacy-first principles.
+## Project Components
+The Cypher project comprises the following components:
+1. **Backend**: A Node.js/Express server that provides APIs for authentication, messaging, user management, and payment verification.
+2. **Frontend**: A React-based interface built using Next.js for a modern user experience.
+3. **CLI**: Command Line Interface for admin functionalities, allowing the management of users, conversations, and other administrative tasks.
 
-## Prerequisites
+## Technology Stack
+- **Node.js & Express** for backend services.
+- **Firebase** for authentication, Firestore for data storage, and Realtime Database for real-time messaging.
+- **React & Next.js** for frontend development.
+- **Winston** for logging and **Rate Limiting** for API protection.
+- **AES & E2EE Encryption** for secure messaging.
+- **Web3.js** for cryptocurrency payment handling.
 
-Before setting up the backend, make sure you have the following installed:
+## Directory Structure
+```
+Cypher/
+  |-- backend/
+  |    |-- src/                # Source files for backend API and services
+  |    |-- backend_cli/        # CLI for admin functionalities
+  |    |-- index.js            # Entry point for backend server
+  |-- frontend/
+  |    |-- pages/              # Next.js pages for the application
+  |    |-- components/         # React components used across the application
+  |    |-- public/             # Public assets like images and icons
+  |    |-- App.js              # Main app component
+  |-- .env                     # Environment variables for both backend and frontend
+  |-- README.md                # Project overview and setup instructions
+```
 
-- [Node.js (v18 or later)](https://nodejs.org/)
-- [npm](https://www.npmjs.com/) or [yarn](https://yarnpkg.com/)
-- Firebase Admin SDK (as the backend depends on Firebase services)
+## Features
+- **User Authentication**: Secure user login and registration via Firebase, using CypherTag, password, and PIN verification.
+- **Messaging**: Secure messaging with AES and E2EE, with options for direct messages, group chats, and channels.
+- **Self-Destructing Messages**: Support for messages that delete after a predefined period.
+- **Admin Features**: Employee admins can manage users, assign roles, view platform stats, and pin messages.
+- **Crypto Payments**: ETH-based payments for unlocking advanced features such as creating business channels.
+- **Minimalist UI**: Black-and-white themed interface focused on privacy, built for ease of navigation.
 
-## Getting Started
-
+## Setup Instructions
 1. **Clone the Repository**
    ```sh
    git clone <repository-url>
-   cd Cypher/backend
+   cd Cypher/
    ```
-2. **Install Dependencies**
-   ```sh
-   npm install
-   ```
-3. **Set Up Environment Variables**
-   Create a `.env` file at the root of your backend directory:
-   ```sh
-   touch .env
-   ```
-   Add the necessary environment variables (explained in the [Environment Configuration](#environment-configuration) section).
-
-## Environment Configuration
-
-Below is a sample `.env` configuration for the backend.
-
-```env
-FIREBASE_PROJECT_ID=your_firebase_project_id
-FIREBASE_PRIVATE_KEY="your_firebase_private_key"
-FIREBASE_CLIENT_EMAIL=your_firebase_client_email
-JWT_SECRET=your_jwt_secret_key
-MESSAGE_SECRET_KEY=your_message_encryption_key
-REFRESH_TOKEN_SECRET=your_refresh_token_secret
-PORT=5000
-```
-
-- **FIREBASE\_PROJECT\_ID**: Your Firebase project ID.
-- **JWT\_SECRET**: The secret key used for signing JWT tokens.
-- **MESSAGE\_SECRET\_KEY**: Secret key for message encryption.
-
-## Firebase Setup
-
-1. Create a Firebase project and add the service account.
-2. Enable Firebase Auth, Firestore Database, and Firebase Realtime Database.
-3. Download your service account key (JSON format) and place it in the `src` directory.
-4. Update your `.env` with Firebase credentials.
-
-## Running the Backend
-
-To run the backend:
-
-- **Run the server alone**
-  ```sh
-  node index.js
-  ```
-- **Run the backend with CLI for admin functionalities**
-  ```sh
-  node index.js combined
-  ```
-- The backend runs by default on port `5000`. You can modify the `PORT` in `.env`.
-
-## API Documentation
-
-The backend offers a series of RESTful APIs to interact with the Cypher application. These routes are dynamically loaded from the `src/routes` directory. Below is an overview:
-
-- **Authentication** (`/api/auth`)
-
-  - **POST /register**: Register a new user.
-  - **POST /login**: Log in a user.
-  - **POST /refresh-token**: Refresh an access token.
-
-- **Messages** (`/api/messages`)
-
-  - **POST /send**: Send a message within a conversation.
-  - **GET /**: Get all messages in a specific conversation.
-
-- **Conversations** (`/api/conversations`)
-
-  - **POST /create**: Create a new conversation.
-  - **POST /rename**: Rename a conversation.
-
-- **Admin Operations** (`/api/employeeRoutes`)
-
-  - **DELETE /delete-user/**: Delete a user by their UID.
-  - **POST /grant-free-access**: Grant free group and channel creation permissions.
-  - **GET /platform-stats**: Get platform statistics.
-
-For full documentation of the available endpoints, refer to the `/docs` directory (if available).
-
-## Messaging Logic
-
-- Messages are end-to-end encrypted (E2EE) and stored within Firestore.
-- Messages are organized within **conversations**, which are the basic units for both direct and group communication.
-- **Channels** and **Group Chats** are treated as specialized types of conversations.
-- Each message and conversation is indexed by a unique identifier for efficient retrieval.
-
-## Admin Features
-
-Admin employees have enhanced privileges for managing the platform. The admin CLI can:
-
-- Delete user accounts.
-- Assign roles such as **Employee Admin**.
-- Retrieve platform statistics such as total users, messages, and conversations.
-- Pin messages, rename conversations, and set profile photos for conversations.
-
-To run the CLI standalone, execute:
-
-```sh
-node index.js cli
-```
-
-## Frontend Integration
-
-To integrate a Next.js + React frontend with this backend, follow these steps:
-
-1. **Set Up API Calls**
-   - Use Axios or the native Fetch API to make HTTP requests to the backend.
-   - Example for fetching messages:
-     ```js
-     import axios from 'axios';
-
-     const getMessages = async (conversationId) => {
-       try {
-         const response = await axios.get(`/api/messages/${conversationId}`);
-         return response.data;
-       } catch (error) {
-         console.error('Error fetching messages:', error);
-       }
-     };
+2. **Backend Setup**
+   - Navigate to the backend directory:
+     ```sh
+     cd backend/
      ```
-2. **Authentication Flow**
-   - After registering or logging in via Firebase, store the JWT in local storage or cookies.
-   - Attach the JWT as an Authorization header to protected endpoints.
-3. **Real-Time Updates**
-   - Use WebSockets or Firebase Realtime Database to enable real-time message updates.
-   - You can leverage Firebase's SDK for listening to changes in Firestore, triggering front-end updates.
-4. **Routing**
-   - Route different components in Next.js to backend endpoints. For example, use `getServerSideProps` to fetch conversation data server-side.
-   - Secure route access by validating the JWT on each server-side request.
+   - Install dependencies:
+     ```sh
+     npm install
+     ```
+   - Set up your `.env` file with the necessary Firebase and server configuration details.
+   - Start the backend server:
+     ```sh
+     node index.js combined
+     ```
+3. **Frontend Setup**
+   - Navigate to the frontend directory:
+     ```sh
+     cd ../frontend/
+     ```
+   - Install dependencies:
+     ```sh
+     npm install
+     ```
+   - Start the development server:
+     ```sh
+     npm run dev
+     ```
+4. **Admin CLI**
+   - The admin CLI can be started separately for managing backend functionalities:
+     ```sh
+     node backend/index.js cli
+     ```
 
-## Security
+## Backend Overview
+The backend handles all essential functions, including user authentication, encryption, and real-time message exchange. Firebase is used for its authentication capabilities, Realtime Database for fast message updates, and Firestore for persistent data.
 
-- **JWT Authentication**: Used for managing user sessions securely.
-- **Rate Limiting**: Prevents abusive access to the API by limiting requests.
-- **E2EE Messaging**: Ensures message privacy with AES encryption and Firebase.
-- **Error Handling**: Comprehensive middleware catches and handles errors to provide secure responses.
+**Key Endpoints** include:
+- **/api/auth**: Handles user registration, login, and authentication.
+- **/api/conversations**: APIs for creating, deleting, and managing conversations.
+- **/api/messages**: Sending, deleting, and retrieving messages.
 
-## Directory Structure
+## Frontend Overview
+The frontend uses **Next.js** to create a single-page experience for users, ensuring quick navigation between the dashboard, chat, and settings. Key components include:
+- **Login & Registration**: Two-step process with password and PIN verification.
+- **Dashboard**: Displays recent conversations and allows users to navigate between chats.
+- **Messaging UI**: Chat interface that supports both text and media messages.
 
+**Integration Suggestions**:
+- Use Axios to communicate with the backend.
+- JWT tokens should be stored securely (HTTP-only cookies or secure local storage).
+- Implement Firebase listeners in the frontend to receive real-time updates from the Realtime Database.
+
+## CLI Overview
+The **Cypher CLI** allows admin employees to manage user accounts, retrieve platform statistics, and moderate conversations. It’s a powerful tool to execute administrative operations directly.
+
+**Main Features**:
+- **User Management**: Delete accounts, grant free channel creation.
+- **Platform Stats**: View total user count, messages, and conversations.
+- **Moderation Tools**: Pin messages, rename conversations.
+
+To run the CLI:
+```sh
+node backend/index.js cli
 ```
-backend/
-  |-- src/
-  |    |-- routes/                 # API routes
-  |    |-- controllers/            # Request handlers
-  |    |-- middleware/             # Authentication and session middleware
-  |    |-- utils/                  # Utility functions (e.g., encryption, logging)
-  |    |-- firebase.js             # Firebase Admin initialization
-  |-- backend_cli/                 # CLI for admin functionalities
-  |-- index.js                     # Entry point of the application
-  |-- .env                         # Environment variables
-  |-- package.json                 # Dependencies and scripts
-```
 
-## Logging
-
-- Uses **Winston** for logging information and errors.
-- Logs are saved in a rotating file system within the `logs/` directory.
-- All access, errors, and CLI events are logged for auditing.
+## Future Enhancements
+The following features are planned for future versions of Cypher:
+- **Mobile Application**: Native Android/iOS apps for better user experience.
+- **Voice and Video Calling**: Encrypted audio and video communication.
+- **Advanced Payment Integrations**: Adding support for more cryptocurrencies.
+- **User Privacy Analytics**: Tools to allow users to analyze and control their data footprint.
 
 ## Conclusion
+The Cypher project is an ongoing effort to deliver privacy-focused, encrypted messaging with ease of use for both end-users and administrators. Contributions are welcome as we build this open and transparent communication platform.
 
-The Cypher backend is built to ensure data privacy, scalability, and ease of integration with a React or Next.js frontend. Frontend developers can use the provided API endpoints to create a seamless and secure messaging experience.
+For more details on how to get started or to contribute, please refer to the documentation or reach out to the maintainers.
 
-For questions or issues, please reach out to the project maintainers or refer to the documentation.
+
 
