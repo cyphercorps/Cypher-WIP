@@ -66,7 +66,7 @@ const logCLIError = (message, errorDetails = null) => {
 };
 
 const logInfo = (message) => {
-  logger.info(`INFO: ${message}`);
+  logger.info(message); // Modified to avoid prefixing 'INFO:' since Winston already adds the level
 };
 
 const logWarning = (message) => {

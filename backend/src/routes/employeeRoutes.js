@@ -15,22 +15,59 @@ const router = express.Router();
 // Configure Multer to handle file uploads for profile photo uploads
 const upload = multer({ storage: multer.memoryStorage() });
 
+// Debug: Log imported handlers to verify they are defined
+console.log({
+  deleteUser,
+  grantFreeAccess,
+  getPlatformStats,
+  setConversationProfilePhoto,
+  pinMessage,
+  renameConversation,
+});
+
+// Helper function to check if a handler is defined
+const checkHandler = (handler, handlerName) => {
+  if (!handler) {
+    console.error(`Handler "${handlerName}" is not defined. Please check the employeeController.`);
+  }
+};
+
+// Verify that all handlers are defined before using them in routes
+checkHandler(deleteUser, 'deleteUser');
+checkHandler(grantFreeAccess, 'grantFreeAccess');
+checkHandler(getPlatformStats, 'getPlatformStats');
+checkHandler(setConversationProfilePhoto, 'setConversationProfilePhoto');
+checkHandler(pinMessage, 'pinMessage');
+checkHandler(renameConversation, 'renameConversation');
+
 // Admin: Delete user by UID (protected route)
-router.delete('/delete-user/:uid', isAuthenticated, isSessionValid, isEmployee, deleteUser);
+if (deleteUser) {
+  router.delete('/delete-user/:uid', isAuthenticated, isSessionValid, isEmployee, deleteUser);
+}
 
 // Admin: Grant free access to channels and group chats (protected route)
-router.post('/grant-free-access', isAuthenticated, isSessionValid, isEmployee, grantFreeAccess);
+if (grantFreeAccess) {
+  router.post('/grant-free-access', isAuthenticated, isSessionValid, isEmployee, grantFreeAccess);
+}
 
 // Admin: Get platform statistics (total users, total messages, total conversations) (protected route)
-router.get('/platform-stats', isAuthenticated, isSessionValid, isEmployee, getPlatformStats);
+if (getPlatformStats) {
+  router.get('/platform-stats', isAuthenticated, isSessionValid, isEmployee, getPlatformStats);
+}
 
 // Admin: Upload a conversation profile photo (protected route)
-router.post('/conversation/:conversationId/upload-photo', isAuthenticated, isSessionValid, isEmployee, upload.single('profilePhoto'), setConversationProfilePhoto);
+if (setConversationProfilePhoto) {
+  router.post('/conversation/:conversationId/upload-photo', isAuthenticated, isSessionValid, isEmployee, upload.single('profilePhoto'), setConversationProfilePhoto);
+}
 
 // Admin: Pin a message in a conversation (protected route)
-router.post('/conversation/pin-message', isAuthenticated, isSessionValid, isEmployee, pinMessage);
+if (pinMessage) {
+  router.post('/conversation/pin-message', isAuthenticated, isSessionValid, isEmployee, pinMessage);
+}
 
 // Admin: Rename a conversation (protected route)
-router.post('/conversation/rename', isAuthenticated, isSessionValid, isEmployee, renameConversation);
+if (renameConversation) {
+  router.post('/conversation/rename', isAuthenticated, isSessionValid, isEmployee, renameConversation);
+}
 
 module.exports = router;

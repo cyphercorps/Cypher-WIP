@@ -25,7 +25,7 @@ const mainMenu = async () => {
     return;
   }
 
-  logger.logInfo('User accessed CLI successfully');
+  logger.logInfo('A Dev has accessed Cypher backend CLI! O.o O_o Welcome Developer! Lets begin debugging. O_o O.o');
 
   while (true) {
     const { commandGroup } = await inquirer.prompt([
