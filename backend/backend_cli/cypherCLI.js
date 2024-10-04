@@ -1,191 +1,340 @@
-#!/usr/bin/env node
+// Main Cypher CLI Interface
 
-const { Command } = require('commander');
 const inquirer = require('inquirer');
-const axios = require('axios');
+const authCommands = require('./commands/authCommands');
+const conversationCommands = require('./commands/conversationCommands');
+const employeeCommands = require('./commands/employeeCommands');
+const messageCommands = require('./commands/messageCommands');
+const notificationCommands = require('./commands/notificationCommands');
+const profileCommands = require('./commands/profileCommands');
+const utilityCommands = require('./commands/utilityCommands');
+const logger = require('./utils/enhanced_logger');
 require('dotenv').config();
 
-// Define CLI program
-const program = new Command();
+const PASSWORD = 'AB62D';
 
-// Base URL for the backend API
-const BASE_URL = process.env.BACKEND_URL || 'https://your-backend-url';
-
-// Step 1: Prompt user for password before granting access
-async function authenticate() {
+// CLI Main Menu
+const mainMenu = async () => {
   const { password } = await inquirer.prompt([
+    { type: 'password', name: 'password', message: 'Enter the CLI access password:' },
+  ]);
+
+  if (password !== PASSWORD) {
+    console.error('Incorrect password. Access denied.');
+    logger.logCLIError('Incorrect password attempt to access CLI');
+    return;
+  }
+
+  logger.logInfo('User accessed CLI successfully');
+
+  while (true) {
+    const { commandGroup } = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'commandGroup',
+        message: 'Select a command group:',
+        choices: [
+          'Authentication',
+          'Conversations',
+          'Employee Commands',
+          'Messages',
+          'Notifications',
+          'Profile',
+          'Utilities',
+          'Exit',
+        ],
+      },
+    ]);
+
+    if (commandGroup === 'Exit') {
+      console.log('Exiting Cypher CLI...');
+      logger.logInfo('User exited the CLI');
+      break;
+    }
+
+    switch (commandGroup) {
+      case 'Authentication':
+        await handleAuthCommands();
+        break;
+      case 'Conversations':
+        await handleConversationCommands();
+        break;
+      case 'Employee Commands':
+        await handleEmployeeCommands();
+        break;
+      case 'Messages':
+        await handleMessageCommands();
+        break;
+      case 'Notifications':
+        await handleNotificationCommands();
+        break;
+      case 'Profile':
+        await handleProfileCommands();
+        break;
+      case 'Utilities':
+        await handleUtilityCommands();
+        break;
+    }
+  }
+};
+
+// Handlers for each command group
+const handleAuthCommands = async () => {
+  const { authCommand } = await inquirer.prompt([
     {
-      type: 'password',
-      message: 'Enter password to access the Cypher CLI:',
-      name: 'password',
-      mask: '*',
+      type: 'list',
+      name: 'authCommand',
+      message: 'Select an authentication command:',
+      choices: [
+        'Register User',
+        'Login User',
+        'Verify PIN',
+        'Refresh Token',
+        'Logout User',
+        'Back',
+      ],
     },
   ]);
 
-  // Check if the password is correct
-  if (password === 'AB62D') {
-    console.log('Access granted. Welcome to Cypher CLI.');
-    startCLI(); // Start the main CLI after successful authentication
-  } else {
-    console.error('Access denied. Incorrect password.');
-    process.exit(1);
+  switch (authCommand) {
+    case 'Register User':
+      await authCommands.registerUser();
+      break;
+    case 'Login User':
+      await authCommands.loginUser();
+      break;
+    case 'Verify PIN':
+      await authCommands.verifyPin();
+      break;
+    case 'Refresh Token':
+      await authCommands.refreshToken();
+      break;
+    case 'Logout User':
+      await authCommands.logoutUser();
+      break;
+    case 'Back':
+      return;
   }
-}
+};
 
-// Step 2: Define CLI Commands
-function startCLI() {
-  program
-    .name('cypherCLI')
-    .description('CLI for managing and debugging the Cypher Backend')
-    .version('1.0.0');
+const handleConversationCommands = async () => {
+  const { conversationCommand } = await inquirer.prompt([
+    {
+      type: 'list',
+      name: 'conversationCommand',
+      message: 'Select a conversation command:',
+      choices: [
+        'Create Conversation',
+        'Rename Conversation',
+        'Add Participants',
+        'Delete Conversation',
+        'Pin Message',
+        'Back',
+      ],
+    },
+  ]);
 
-  // Test Connection
-  program
-    .command('test-connection')
-    .description('Test the connection to the backend')
-    .action(async () => {
-      try {
-        const response = await axios.get(`${BASE_URL}/`);
-        console.log('Backend Response:', response.data);
-      } catch (error) {
-        console.error('Error connecting to backend:', error.message);
-      }
-    });
+  switch (conversationCommand) {
+    case 'Create Conversation':
+      await conversationCommands.createConversation();
+      break;
+    case 'Rename Conversation':
+      await conversationCommands.renameConversation();
+      break;
+    case 'Add Participants':
+      await conversationCommands.addParticipants();
+      break;
+    case 'Delete Conversation':
+      await conversationCommands.deleteConversation();
+      break;
+    case 'Pin Message':
+      await conversationCommands.pinMessage();
+      break;
+    case 'Back':
+      return;
+  }
+};
 
-  // Register User
-  program
-    .command('register-user')
-    .description('Register a new user')
-    .requiredOption('-t, --cypherTag <cypherTag>', 'CypherTag of the user')
-    .requiredOption('-p, --password <password>', 'Password for the user')
-    .requiredOption('-n, --pin <pin>', '6-digit pin for the user')
-    .action(async (options) => {
-      try {
-        const { cypherTag, password, pin } = options;
-        const response = await axios.post(`${BASE_URL}/api/auth/register`, {
-          cypherTag,
-          password,
-          pin,
-        });
-        console.log('User registered successfully:', response.data);
-      } catch (error) {
-        console.error('Error registering user:', error.response ? error.response.data : error.message);
-      }
-    });
+const handleEmployeeCommands = async () => {
+  const { employeeCommand } = await inquirer.prompt([
+    {
+      type: 'list',
+      name: 'employeeCommand',
+      message: 'Select an employee command:',
+      choices: [
+        'Delete User',
+        'Grant Free Access',
+        'Get Platform Stats',
+        'Upload Conversation Profile Photo',
+        'Pin Message',
+        'Rename Conversation',
+        'Back',
+      ],
+    },
+  ]);
 
-  // Login User
-  program
-    .command('login')
-    .description('Login a user')
-    .requiredOption('-t, --cypherTag <cypherTag>', 'CypherTag of the user')
-    .requiredOption('-p, --password <password>', 'Password for the user')
-    .action(async (options) => {
-      try {
-        const { cypherTag, password } = options;
-        const response = await axios.post(`${BASE_URL}/api/auth/login`, {
-          cypherTag,
-          password,
-        });
-        console.log('Login successful:', response.data);
-      } catch (error) {
-        console.error('Error logging in:', error.response ? error.response.data : error.message);
-      }
-    });
+  switch (employeeCommand) {
+    case 'Delete User':
+      await employeeCommands.deleteUser();
+      break;
+    case 'Grant Free Access':
+      await employeeCommands.grantFreeAccess();
+      break;
+    case 'Get Platform Stats':
+      await employeeCommands.getPlatformStats();
+      break;
+    case 'Upload Conversation Profile Photo':
+      await employeeCommands.uploadConversationProfilePhoto();
+      break;
+    case 'Pin Message':
+      await employeeCommands.pinMessage();
+      break;
+    case 'Rename Conversation':
+      await employeeCommands.renameConversation();
+      break;
+    case 'Back':
+      return;
+  }
+};
 
-  // Send Message
-  program
-    .command('send-message')
-    .description('Send a message to a conversation')
-    .requiredOption('-c, --conversationId <conversationId>', 'Conversation ID')
-    .requiredOption('-s, --senderId <senderId>', 'Sender ID')
-    .requiredOption('-m, --message <message>', 'Message text')
-    .action(async (options) => {
-      try {
-        const { conversationId, senderId, message } = options;
-        const response = await axios.post(`${BASE_URL}/api/messages/send`, {
-          conversationId,
-          senderId,
-          message,
-        });
-        console.log('Message sent successfully:', response.data);
-      } catch (error) {
-        console.error('Error sending message:', error.response ? error.response.data : error.message);
-      }
-    });
+const handleMessageCommands = async () => {
+  const { messageCommand } = await inquirer.prompt([
+    {
+      type: 'list',
+      name: 'messageCommand',
+      message: 'Select a message command:',
+      choices: [
+        'Send Message',
+        'Edit Message',
+        'Delete Message',
+        'Upload and Send Image',
+        'Update Read Receipts',
+        'Typing Indicator',
+        'Back',
+      ],
+    },
+  ]);
 
-  // Get Messages
-  program
-    .command('get-messages')
-    .description('Get messages from a conversation')
-    .requiredOption('-c, --conversationId <conversationId>', 'Conversation ID')
-    .action(async (options) => {
-      try {
-        const { conversationId } = options;
-        const response = await axios.get(`${BASE_URL}/api/messages/${conversationId}/messages`);
-        console.log('Messages:', response.data);
-      } catch (error) {
-        console.error('Error getting messages:', error.response ? error.response.data : error.message);
-      }
-    });
+  switch (messageCommand) {
+    case 'Send Message':
+      await messageCommands.sendMessage();
+      break;
+    case 'Edit Message':
+      await messageCommands.editMessage();
+      break;
+    case 'Delete Message':
+      await messageCommands.deleteMessage();
+      break;
+    case 'Upload and Send Image':
+      await messageCommands.uploadAndSendImage();
+      break;
+    case 'Update Read Receipts':
+      await messageCommands.updateReadReceipts();
+      break;
+    case 'Typing Indicator':
+      await messageCommands.typingIndicator();
+      break;
+    case 'Back':
+      return;
+  }
+};
 
-  // Create Conversation
-  program
-    .command('create-conversation')
-    .description('Create a new conversation')
-    .requiredOption('-u, --userId <userId>', 'ID of the user creating the conversation')
-    .requiredOption('-p, --participants <participants...>', 'List of participant IDs')
-    .requiredOption('-t, --type <type>', 'Type of conversation (direct, group, channel)')
-    .action(async (options) => {
-      try {
-        const { userId, participants, type } = options;
-        const response = await axios.post(`${BASE_URL}/api/conversations/create`, {
-          userId,
-          participants,
-          type,
-        });
-        console.log('Conversation created successfully:', response.data);
-      } catch (error) {
-        console.error('Error creating conversation:', error.response ? error.response.data : error.message);
-      }
-    });
+const handleNotificationCommands = async () => {
+  const { notificationCommand } = await inquirer.prompt([
+    {
+      type: 'list',
+      name: 'notificationCommand',
+      message: 'Select a notification command:',
+      choices: [
+        'Send Notification',
+        'Get User Notifications',
+        'Mark Notification as Read',
+        'Back',
+      ],
+    },
+  ]);
 
-  // Refresh Token
-  program
-    .command('refresh-token')
-    .description('Refresh user access token')
-    .requiredOption('-r, --refreshToken <refreshToken>', 'User refresh token')
-    .action(async (options) => {
-      try {
-        const { refreshToken } = options;
-        const response = await axios.post(`${BASE_URL}/api/auth/refresh-token`, {
-          refreshToken,
-        });
-        console.log('Token refreshed successfully:', response.data);
-      } catch (error) {
-        console.error('Error refreshing token:', error.response ? error.response.data : error.message);
-      }
-    });
+  switch (notificationCommand) {
+    case 'Send Notification':
+      await notificationCommands.sendNotification();
+      break;
+    case 'Get User Notifications':
+      await notificationCommands.getUserNotifications();
+      break;
+    case 'Mark Notification as Read':
+      await notificationCommands.markNotificationAsRead();
+      break;
+    case 'Back':
+      return;
+  }
+};
 
-  // Logout User
-  program
-    .command('logout')
-    .description('Logout a user')
-    .requiredOption('-u, --uid <uid>', 'User ID')
-    .action(async (options) => {
-      try {
-        const { uid } = options;
-        const response = await axios.post(`${BASE_URL}/api/auth/logout`, {
-          uid,
-        });
-        console.log('User logged out successfully:', response.data);
-      } catch (error) {
-        console.error('Error logging out:', error.response ? error.response.data : error.message);
-      }
-    });
+const handleProfileCommands = async () => {
+  const { profileCommand } = await inquirer.prompt([
+    {
+      type: 'list',
+      name: 'profileCommand',
+      message: 'Select a profile command:',
+      choices: [
+        'Get Profile',
+        'Update Profile',
+        'Upload Profile Photo',
+        'Search Users by CypherTag',
+        'Back',
+      ],
+    },
+  ]);
 
-  // Parse the CLI arguments
-  program.parse(process.argv);
-}
+  switch (profileCommand) {
+    case 'Get Profile':
+      await profileCommands.getProfile();
+      break;
+    case 'Update Profile':
+      await profileCommands.updateProfile();
+      break;
+    case 'Upload Profile Photo':
+      await profileCommands.uploadProfilePhoto();
+      break;
+    case 'Search Users by CypherTag':
+      await profileCommands.searchUsers();
+      break;
+    case 'Back':
+      return;
+  }
+};
 
-// Run the authentication prompt first
-authenticate();
+const handleUtilityCommands = async () => {
+  const { utilityCommand } = await inquirer.prompt([
+    {
+      type: 'list',
+      name: 'utilityCommand',
+      message: 'Select a utility command:',
+      choices: [
+        'Show Log Files',
+        'View Specific Log File',
+        'List All Commands',
+        'Back',
+      ],
+    },
+  ]);
+
+  switch (utilityCommand) {
+    case 'Show Log Files':
+      await utilityCommands.showLogFiles();
+      break;
+    case 'View Specific Log File':
+      await utilityCommands.viewLogFile();
+      break;
+    case 'List All Commands':
+      await utilityCommands.listCommands();
+      break;
+    case 'Back':
+      return;
+  }
+};
+
+// Start the CLI
+mainMenu().catch((error) => {
+  console.error('An unexpected error occurred:', error.message);
+  logger.logCLIError('Unexpected error in Cypher CLI', error);
+});
