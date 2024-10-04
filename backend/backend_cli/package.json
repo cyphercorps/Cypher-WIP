@@ -1,0 +1,18 @@
+{
+  "name": "backend_cli",
+  "version": "1.0.0",
+  "main": "cypherCLI.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "axios": "^1.7.7",
+    "commander": "^12.1.0",
+    "dotenv": "^16.4.5",
+    "inquirer": "^11.1.0"
+  }
+}
