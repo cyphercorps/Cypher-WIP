@@ -1,9 +1,12 @@
+// index.js
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const rateLimit = require('express-rate-limit'); // Import rate limiting middleware
 const logger = require('./src/utils/logger'); // Import the logger
+const messageCleanup = require('./src/utils/messageCleanup'); // Import message cleanup script
 require('dotenv').config();
+const cliArgs = process.argv.slice(2);
 
 // Initialize Firebase Admin (import Firebase Admin early)
 require('./src/firebase');
@@ -12,7 +15,6 @@ require('./src/firebase');
 const authRoutes = require('./src/routes/authRoutes');
 const conversationRoutes = require('./src/routes/conversationRoutes');
 const messageRoutes = require('./src/routes/messageRoutes');
-const messageCleanup = require('./src/utils/messageCleanup'); // Import message cleanup script
 
 // Initialize Express App
 const app = express();
@@ -37,6 +39,11 @@ app.use(apiRateLimiter); // Apply the rate limiter globally
 // Root route for testing the server
 app.get('/', (req, res) => {
   res.send('Cypher Backend is running!');
+});
+
+// Backend + CLI status route
+app.get('/backend-cli-status', (req, res) => {
+  res.send('Cypher Backend + CLI v0.2 is running. O_o');
 });
 
 // Routes
@@ -64,7 +71,23 @@ setInterval(() => {
   messageCleanup.cleanupSelfDestructingMessages();
 }, 60 * 60 * 1000); // Run cleanup every hour
 
-// Start Server
-app.listen(PORT, () => {
-  logger.info(`Server running on port ${PORT}`);
-});
+// Conditionally initialize the CLI or start the backend server
+if (cliArgs.includes('cli')) {
+  // Initialize the CLI instead of the server
+  const cypherCLI = require('./backend_cli/cypherCLI');
+  cypherCLI.initializeCLI();
+} else if (cliArgs.includes('combined')) {
+  // Run both CLI and backend server simultaneously
+  const cypherCLI = require('./backend_cli/cypherCLI');
+  cypherCLI.initializeCLI();
+
+  // Start Server
+  app.listen(PORT, () => {
+    logger.info(`Server running on port ${PORT} alongside CLI`);
+  });
+} else {
+  // Start Server
+  app.listen(PORT, () => {
+    logger.info(`Server running on port ${PORT}`);
+  });
+}
