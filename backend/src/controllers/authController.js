@@ -18,6 +18,24 @@ const generateTokens = (uid, cypherTag) => {
   return { accessToken, refreshToken };
 };
 
+// Token verification middleware
+const verifyToken = (req, res, next) => {
+  const token = req.headers['authorization']?.split(' ')[1];
+
+  if (!token) {
+    return next(ApiError.unauthorized('No token provided.'));
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    if (err) {
+      return next(ApiError.unauthorized('Invalid token.'));
+    }
+
+    req.uid = decoded.uid;
+    next();
+  });
+};
+
 // User Registration (Regular User)
 exports.register = async (req, res, next) => {
   const { cypherTag, password, pin } = req.body;
@@ -170,6 +188,10 @@ exports.refreshToken = async (req, res, next) => {
 
     const user = userDoc.data();
 
+    // Log tokens for debugging
+    logger.info(`Provided refresh token: ${refreshToken}`);
+    logger.info(`Stored refresh token: ${user.refreshToken}`);
+
     // Check if the refresh token matches the one stored in Firestore
     if (refreshToken !== user.refreshToken) {
       return next(ApiError.unauthorized('Invalid refresh token.'));
@@ -214,8 +236,8 @@ exports.resetPassword = async (req, res, next) => {
 };
 
 // Logout Function
-exports.logout = async (req, res, next) => {
-  const { uid } = req.body;
+exports.logout = [verifyToken, async (req, res, next) => {
+  const uid = req.uid; // Extracted from the token
 
   try {
     // Invalidate both the access token and the refresh token
@@ -230,4 +252,4 @@ exports.logout = async (req, res, next) => {
   } catch (error) {
     next(ApiError.internal('Failed to log out', error.message));
   }
-};
+}];
