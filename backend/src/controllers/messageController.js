@@ -15,7 +15,6 @@ exports.sendMessage = async (req, res, next) => {
   const { conversationId, senderId, message, selfDestructTime } = req.body;
 
   try {
-    // Encrypt the message
     const secretKey = process.env.MESSAGE_SECRET_KEY;
     const encryptedMessage = encryptMessage(message, secretKey);
 
@@ -26,7 +25,7 @@ exports.sendMessage = async (req, res, next) => {
       senderId,
       message: encryptedMessage,
       timestamp,
-      selfDestructTime: selfDestructTime ? timestamp.getTime() + selfDestructTime : null, // Add self-destruct timer
+      selfDestructTime: selfDestructTime ? timestamp.getTime() + selfDestructTime : null,
     });
 
     // Store message in Firebase Realtime Database for real-time syncing
@@ -46,22 +45,42 @@ exports.sendMessage = async (req, res, next) => {
   }
 };
 
+// Get Messages for a Conversation
+exports.getMessages = async (req, res, next) => {
+  const { conversationId } = req.params;
+
+  try {
+    // Fetch messages from Firestore
+    const messagesSnapshot = await admin.firestore().collection('conversations').doc(conversationId).collection('messages').get();
+
+    if (messagesSnapshot.empty) {
+      return res.status(404).json({ message: 'No messages found' });
+    }
+
+    const messages = messagesSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    res.status(200).json({ messages });
+  } catch (error) {
+    next(ApiError.internal('Error fetching messages', error.message));
+  }
+};
+
 // Edit a Message
 exports.editMessage = async (req, res, next) => {
   const { conversationId, messageId, newMessage } = req.body;
 
   try {
-    // Encrypt the new message
     const secretKey = process.env.MESSAGE_SECRET_KEY;
     const encryptedMessage = encryptMessage(newMessage, secretKey);
 
-    // Update message in Firestore
     await admin.firestore().collection('conversations').doc(conversationId).collection('messages').doc(messageId).update({
       message: encryptedMessage,
       editedAt: new Date(),
     });
 
-    // Update message in Realtime Database
     const messageRef = admin.database().ref(`/conversations/${conversationId}/messages`).orderByChild('messageId').equalTo(messageId);
     const snapshot = await messageRef.once('value');
     snapshot.forEach(childSnapshot => {

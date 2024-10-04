@@ -18,6 +18,9 @@ const messageCleanup = require('./src/utils/messageCleanup'); // Import message 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Enable trust proxy to handle X-Forwarded-For header correctly
+app.set('trust proxy', 1);  // Trust the first proxy in front of your app
+
 // Global Rate Limiter (Apply to all routes)
 const apiRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes

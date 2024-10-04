@@ -94,6 +94,32 @@ exports.createConversation = async (req, res, next) => {
   }
 };
 
+// Get User Conversations
+exports.getUserConversations = async (req, res, next) => {
+  const { uid } = req.params;
+
+  try {
+    // Fetch conversations for the user
+    const conversationsSnapshot = await admin.firestore()
+      .collection('conversations')
+      .where('participants', 'array-contains', uid)
+      .get();
+
+    if (conversationsSnapshot.empty) {
+      return res.status(404).json({ message: 'No conversations found for this user' });
+    }
+
+    const conversations = conversationsSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
+    res.status(200).json({ conversations });
+  } catch (error) {
+    next(ApiError.internal('Error fetching user conversations', error.message));
+  }
+};
+
 // Helper function to trigger notifications
 const triggerNotifications = async (participants, senderId, message) => {
   const notifications = participants

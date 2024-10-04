@@ -2,6 +2,7 @@ const admin = require('firebase-admin');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const ApiError = require('../utils/ApiError');
+const logger = require('../utils/logger'); // Import the logger
 
 // Firebase auth reference
 const auth = admin.auth();
@@ -116,30 +117,36 @@ exports.verifyPin = async (req, res, next) => {
   const { uid, pin } = req.body;
 
   try {
+    // Fetch user document
     const userDoc = await admin.firestore().collection('users').doc(uid).get();
-
     if (!userDoc.exists) {
+      logger.error(`User not found for UID: ${uid}`);
       return next(ApiError.notFound('User not found'));
     }
 
     const user = userDoc.data();
+
+    // Compare the provided PIN with the hashed PIN in the database
     const pinMatch = await bcrypt.compare(pin, user.pin);
     if (!pinMatch) {
+      logger.error(`PIN mismatch for user: ${uid}`);
       return next(ApiError.unauthorized('Incorrect PIN'));
     }
 
-    // Generate tokens (access and refresh tokens)
+    // Generate access and refresh tokens
     const { accessToken, refreshToken } = generateTokens(uid, user.cypherTag);
 
-    // Store the refresh token in Firestore
+    // Store refresh token and set user online status
     await admin.firestore().collection('users').doc(uid).update({
       refreshToken,
       tokenCreatedAt: new Date(),
       onlineStatus: true,
     });
 
+    logger.info(`PIN verified successfully for UID: ${uid}`);
     res.status(200).json({ accessToken, refreshToken });
   } catch (error) {
+    logger.error(`PIN verification failed for UID: ${uid} - Error: ${error.message}`);
     next(ApiError.internal('PIN verification failed', error.message));
   }
 };
