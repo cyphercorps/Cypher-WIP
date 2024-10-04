@@ -4,7 +4,7 @@ const { listDirectoryFiles, readFileContents } = require('../utils/fileUtils');
 require('dotenv').config();
 
 // Show Log Files
-const showLogFiles = async () => {
+const showLogFilesCommand = async () => {
   try {
     const logFiles = listDirectoryFiles('../../logs');
     console.log('Available Log Files:');
@@ -19,7 +19,7 @@ const showLogFiles = async () => {
 };
 
 // Display Specific Log File
-const viewLogFile = async () => {
+const viewLogFileCommand = async () => {
   try {
     const logFileName = await promptForInput('Enter log file name to view:');
     const logFilePath = `../../logs/${logFileName}`;
@@ -36,25 +36,28 @@ const viewLogFile = async () => {
 };
 
 // List Available Commands
-const listCommands = async () => {
+const listCommandsCommand = async () => {
   console.log('Available CLI Commands:');
   console.log('- deleteUser: Delete a user by ID');
   console.log('- grantFreeAccess: Grant free channels or groups to a user');
   console.log('- getPlatformStats: Get platform-wide statistics');
   console.log('- sendMessage: Send a message in a conversation');
-  console.log('- getMessages: Get messages in a conversation');
   console.log('- editMessage: Edit a message in a conversation');
-  console.log('- deleteMessage: Delete a message (soft delete)');
+  console.log('- deleteMessage: Delete a message');
+  console.log('- uploadAndSendImage: Upload and send an image in a conversation');
   console.log('- updateReadReceipts: Update read receipts for a conversation');
   console.log('- typingIndicator: Update typing status in a conversation');
-  console.log('- pinMessage: Pin a message in a conversation');
+  console.log('- createConversation: Create a new conversation');
   console.log('- renameConversation: Rename a conversation');
-  console.log('- uploadConversationProfilePhoto: Upload a profile photo for a conversation');
+  console.log('- addParticipants: Add participants to a group chat');
+  console.log('- removeParticipants: Remove participants from a group chat');
+  console.log('- pinMessage: Pin or unpin a message in a conversation');
+  console.log('- setParticipantPermissions: Set custom permissions for a participant in a conversation');
   logInfo('Displayed list of available commands');
 };
 
 module.exports = {
-  showLogFiles,
-  viewLogFile,
-  listCommands,
+  showLogFilesCommand,
+  viewLogFileCommand,
+  listCommandsCommand,
 };

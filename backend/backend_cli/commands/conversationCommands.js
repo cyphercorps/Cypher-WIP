@@ -1,4 +1,4 @@
-const { createConversation, renameConversation, addParticipants, deleteConversation, pinMessage } = require('../../src/controllers/conversationController'); // Import backend functions directly
+const { createConversation, renameConversation, addParticipants, removeParticipants, deleteConversation, pinMessage, setParticipantPermissions } = require('../../src/controllers/conversationController'); // Import backend functions directly
 const { promptForInput } = require('../utils/promptHelper');
 const logger = require('../utils/logger');
 require('dotenv').config();
@@ -37,8 +37,9 @@ const renameConversationCommand = async () => {
   try {
     const conversationId = await promptForInput('Enter conversation ID:');
     const newName = await promptForInput('Enter new conversation name:');
+    const userId = await promptForInput('Enter your user ID:');
 
-    const req = { body: { conversationId, newName } };
+    const req = { body: { conversationId, newName, userId } };
     const res = {
       status: (code) => ({
         json: (data) => {
@@ -65,8 +66,9 @@ const addParticipantsCommand = async () => {
   try {
     const conversationId = await promptForInput('Enter conversation ID:');
     const newParticipants = await promptForInput('Enter new participants (comma-separated IDs):');
+    const userId = await promptForInput('Enter your user ID:');
 
-    const req = { body: { conversationId, newParticipants: newParticipants.split(',').map((id) => id.trim()) } };
+    const req = { body: { conversationId, newParticipants: newParticipants.split(',').map((id) => id.trim()), userId } };
     const res = {
       status: (code) => ({
         json: (data) => {
@@ -85,6 +87,35 @@ const addParticipantsCommand = async () => {
   } catch (error) {
     console.error('Failed to add participants:', error.message);
     logger.logCLIError('Adding participants to conversation failed', error);
+  }
+};
+
+// Remove participants from a group chat
+const removeParticipantsCommand = async () => {
+  try {
+    const conversationId = await promptForInput('Enter conversation ID:');
+    const participantsToRemove = await promptForInput('Enter participants to remove (comma-separated IDs):');
+    const userId = await promptForInput('Enter your user ID:');
+
+    const req = { body: { conversationId, participantsToRemove: participantsToRemove.split(',').map((id) => id.trim()), userId } };
+    const res = {
+      status: (code) => ({
+        json: (data) => {
+          console.log(`Status: ${code}, Response:`, data);
+        },
+      }),
+    };
+    const next = (error) => {
+      if (error) {
+        throw error;
+      }
+    };
+
+    await removeParticipants(req, res, next);
+    logger.logInfo('Participants removed from conversation successfully');
+  } catch (error) {
+    console.error('Failed to remove participants:', error.message);
+    logger.logCLIError('Removing participants from conversation failed', error);
   }
 };
 
@@ -122,8 +153,9 @@ const pinMessageCommand = async () => {
     const conversationId = await promptForInput('Enter conversation ID:');
     const messageId = await promptForInput('Enter message ID to pin:');
     const pin = await promptForInput('Do you want to pin this message? (yes/no):');
+    const userId = await promptForInput('Enter your user ID:');
 
-    const req = { body: { conversationId, messageId, pin: pin.toLowerCase() === 'yes' } };
+    const req = { body: { conversationId, messageId, pin: pin.toLowerCase() === 'yes', userId } };
     const res = {
       status: (code) => ({
         json: (data) => {
@@ -145,10 +177,42 @@ const pinMessageCommand = async () => {
   }
 };
 
+// Set participant permissions
+const setParticipantPermissionsCommand = async () => {
+  try {
+    const conversationId = await promptForInput('Enter conversation ID:');
+    const participantId = await promptForInput('Enter participant ID:');
+    const permissions = await promptForInput('Enter permissions as JSON (e.g., { "canSendMessages": true, "canDeleteOwnMessages": false }):');
+    const userId = await promptForInput('Enter your user ID:');
+
+    const req = { body: { conversationId, participantId, permissions: JSON.parse(permissions), userId } };
+    const res = {
+      status: (code) => ({
+        json: (data) => {
+          console.log(`Status: ${code}, Response:`, data);
+        },
+      }),
+    };
+    const next = (error) => {
+      if (error) {
+        throw error;
+      }
+    };
+
+    await setParticipantPermissions(req, res, next);
+    logger.logInfo('Participant permissions updated successfully');
+  } catch (error) {
+    console.error('Failed to set participant permissions:', error.message);
+    logger.logCLIError('Setting participant permissions failed', error);
+  }
+};
+
 module.exports = {
   createConversationCommand,
   renameConversationCommand,
   addParticipantsCommand,
+  removeParticipantsCommand,
   deleteConversationCommand,
   pinMessageCommand,
+  setParticipantPermissionsCommand,
 };

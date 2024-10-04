@@ -40,8 +40,9 @@ const editMessageCommand = async () => {
     const conversationId = await promptForInput('Enter conversation ID:');
     const messageId = await promptForInput('Enter message ID to edit:');
     const newMessage = await promptForInput('Enter the new message:');
+    const userId = await promptForInput('Enter your user ID:');
 
-    const req = { body: { conversationId, messageId, newMessage } };
+    const req = { body: { conversationId, messageId, newMessage, userId } };
     const res = {
       status: (code) => ({
         json: (data) => {
@@ -68,8 +69,9 @@ const deleteMessageCommand = async () => {
   try {
     const conversationId = await promptForInput('Enter conversation ID:');
     const messageId = await promptForInput('Enter message ID to delete:');
+    const userId = await promptForInput('Enter your user ID:');
 
-    const req = { body: { conversationId, messageId } };
+    const req = { body: { conversationId, messageId, userId } };
     const res = {
       status: (code) => ({
         json: (data) => {
