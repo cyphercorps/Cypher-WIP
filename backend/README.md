@@ -233,6 +233,7 @@ The front-end of Cypher will be built using **Next.js**. This section provides a
 This project is licensed under the MIT License. See the LICENSE file for details.
 
 ---
+
 <div align="center">
 
 _"In the labyrinth of shadows, where anonymity thrives,  
@@ -241,4 +242,6 @@ Cypher is the beacon where secrets survive."_
 **MajinGenie**  
 _Head of Cypher_
 </div>
+
+
 
