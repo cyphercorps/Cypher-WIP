@@ -1,6 +1,6 @@
 // backend_cli/commands/utilityCommands.js
 
-const { logInfo, logCLIError } = require('../utils/enhanced_logger');
+const { logInfo, logCLIError } = require('../utils/logger');
 const { promptForInput } = require('../utils/promptHelper');
 const { listDirectoryFiles, readFileContents } = require('../utils/fileUtils');
 require('dotenv').config();

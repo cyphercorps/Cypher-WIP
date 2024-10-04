@@ -8,7 +8,7 @@ const messageCommands = require('./commands/messageCommands');
 const notificationCommands = require('./commands/notificationCommands');
 const profileCommands = require('./commands/profileCommands');
 const utilityCommands = require('./commands/utilityCommands');
-const logger = require('./utils/enhanced_logger');
+const logger = require('./utils/logger');
 require('dotenv').config();
 
 const PASSWORD = 'AB62D';
@@ -333,8 +333,14 @@ const handleUtilityCommands = async () => {
   }
 };
 
-// Start the CLI
-mainMenu().catch((error) => {
-  console.error('An unexpected error occurred:', error.message);
-  logger.logCLIError('Unexpected error in Cypher CLI', error);
-});
+// Export all functions along with the main CLI entry point
+module.exports = {
+  mainMenu,
+  handleAuthCommands,
+  handleConversationCommands,
+  handleEmployeeCommands,
+  handleMessageCommands,
+  handleNotificationCommands,
+  handleProfileCommands,
+  handleUtilityCommands,
+};

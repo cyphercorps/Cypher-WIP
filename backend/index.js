@@ -72,14 +72,27 @@ setInterval(() => {
 }, 60 * 60 * 1000); // Run cleanup every hour
 
 // Conditionally initialize the CLI or start the backend server
+const startCLI = async () => {
+  try {
+    const cypherCLI = require('./backend_cli/cypherCLI');
+    await cypherCLI.mainMenu(); // Await to handle CLI as asynchronous
+  } catch (error) {
+    console.error('An error occurred while running the CLI:', error.message);
+    if (typeof logger.logCLIError === 'function') {
+      logger.logCLIError('An error occurred while running the CLI', error);
+    } else {
+      logger.error(`CLI ERROR: ${error.message}`);
+    }
+  }
+};
+
+// Command-line arguments to determine what to run
 if (cliArgs.includes('cli')) {
   // Initialize the CLI instead of the server
-  const cypherCLI = require('./backend_cli/cypherCLI');
-  cypherCLI.initializeCLI();
+  startCLI();
 } else if (cliArgs.includes('combined')) {
   // Run both CLI and backend server simultaneously
-  const cypherCLI = require('./backend_cli/cypherCLI');
-  cypherCLI.initializeCLI();
+  startCLI(); // Run the CLI in asynchronous mode
 
   // Start Server
   app.listen(PORT, () => {
