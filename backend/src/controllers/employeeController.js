@@ -76,6 +76,63 @@ exports.assignAdminPrivileges = async (req, res, next) => {
   }
 };
 
-// Removed: Set Conversation Profile Photo
-// Removed: Pin a Message in a Conversation
-// Removed: Rename a Conversation
+// Set Conversation Profile Photo
+exports.setConversationProfilePhoto = async (req, res, next) => {
+  const { conversationId } = req.params;
+
+  try {
+    const profilePhoto = req.file;
+
+    if (!profilePhoto) {
+      return res.status(400).json({ error: 'No profile photo provided' });
+    }
+
+    // Simulate uploading the profile photo to a storage service
+    // This should ideally include logic to save the photo to a storage bucket like Firebase Storage
+    const photoUrl = `fake-storage-url/${profilePhoto.originalname}`;
+
+    // Update conversation document with profile photo URL
+    await admin.firestore().collection('conversations').doc(conversationId).update({
+      profilePhotoUrl: photoUrl,
+    });
+
+    res.status(200).json({ message: 'Profile photo set successfully' });
+  } catch (error) {
+    console.error('Error setting conversation profile photo:', error);
+    next(ApiError.internal('Failed to set conversation profile photo', error.message));
+  }
+};
+
+// Pin a Message in a Conversation
+exports.pinMessage = async (req, res, next) => {
+  const { conversationId, messageId } = req.body;
+
+  try {
+    // Update the conversation document to set the pinned message
+    await admin.firestore().collection('conversations').doc(conversationId).update({
+      pinnedMessageId: messageId,
+    });
+
+    res.status(200).json({ message: 'Message pinned successfully' });
+  } catch (error) {
+    console.error('Error pinning message:', error);
+    next(ApiError.internal('Failed to pin message', error.message));
+  }
+};
+
+// Rename a Conversation
+exports.renameConversation = async (req, res, next) => {
+  const { conversationId, newName } = req.body;
+
+  try {
+    // Update the conversation document with the new name
+    await admin.firestore().collection('conversations').doc(conversationId).update({
+      name: newName,
+    });
+
+    res.status(200).json({ message: 'Conversation renamed successfully' });
+  } catch (error) {
+    console.error('Error renaming conversation:', error);
+    next(ApiError.internal('Failed to rename conversation', error.message));
+  }
+};

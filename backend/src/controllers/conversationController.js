@@ -15,26 +15,14 @@ exports.createConversation = async (req, res, next) => {
 
     const user = userDoc.data();
 
-    // Assign the conversation creator as the default owner and admin
-    const owners = [userId];
-    const admins = [{ userId, permissions: ['ADD_PARTICIPANTS', 'REMOVE_PARTICIPANTS', 'RENAME_CONVERSATION', 'PIN_MESSAGE', 'UPLOAD_PROFILE_PHOTO', 'SET_PARTICIPANT_PERMISSIONS'] }];
-
-    // Set default participant permissions
-    const participantsWithPermissions = participants.map(participantId => ({
-      userId: participantId,
-      permissions: {
-        canSendMessages: true,
-        canDeleteOwnMessages: true,
-        canLeaveConversation: true,
-      },
-    }));
+    // Assign the conversation creator as the default admin
+    const admins = [userId];
 
     // Check if the conversation is a channel
     if (type === 'channel') {
       if (user.channelPaymentStatus) {
         const newConversation = await admin.firestore().collection('conversations').add({
-          participants: participantsWithPermissions,
-          owners,
+          participants,
           admins,
           type,
           participantCount: participants.length,
@@ -46,8 +34,7 @@ exports.createConversation = async (req, res, next) => {
         const paymentVerification = await verifyPayment(userId, 'channel', currency);
         if (paymentVerification.success) {
           const newConversation = await admin.firestore().collection('conversations').add({
-            participants: participantsWithPermissions,
-            owners,
+            participants,
             admins,
             type,
             participantCount: participants.length,
@@ -65,8 +52,7 @@ exports.createConversation = async (req, res, next) => {
     if (type === 'group' && participants.length > 10) {
       if (user.groupChatPaymentStatus) {
         const newConversation = await admin.firestore().collection('conversations').add({
-          participants: participantsWithPermissions,
-          owners,
+          participants,
           admins,
           type,
           participantCount: participants.length,
@@ -78,8 +64,7 @@ exports.createConversation = async (req, res, next) => {
         const paymentVerification = await verifyPayment(userId, 'group', currency);
         if (paymentVerification.success) {
           const newConversation = await admin.firestore().collection('conversations').add({
-            participants: participantsWithPermissions,
-            owners,
+            participants,
             admins,
             type,
             participantCount: participants.length,
@@ -95,8 +80,7 @@ exports.createConversation = async (req, res, next) => {
 
     // Handle direct or group chats with 10 or fewer participants (no payment required)
     const newConversation = await admin.firestore().collection('conversations').add({
-      participants: participantsWithPermissions,
-      owners,
+      participants,
       admins,
       type,
       participantCount: participants.length,
@@ -110,9 +94,57 @@ exports.createConversation = async (req, res, next) => {
   }
 };
 
+// Get User Conversations
+exports.getUserConversations = async (req, res, next) => {
+  const { uid } = req.params;
+
+  try {
+    // Fetch conversations for the user
+    const conversationsSnapshot = await admin.firestore()
+      .collection('conversations')
+      .where('participants', 'array-contains', uid)
+      .get();
+
+    if (conversationsSnapshot.empty) {
+      return res.status(404).json({ message: 'No conversations found for this user' });
+    }
+
+    const conversations = conversationsSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
+    res.status(200).json({ conversations });
+  } catch (error) {
+    next(ApiError.internal('Error fetching user conversations', error.message));
+  }
+};
+
+// Helper function to trigger notifications
+const triggerNotifications = async (participants, senderId, message) => {
+  const notifications = participants
+    .filter(participantId => participantId !== senderId)
+    .map(async participantId => {
+      const userDoc = await admin.firestore().collection('users').doc(participantId).get();
+      const user = userDoc.data();
+
+      if (user.notifications) {
+        await admin.firestore().collection('notifications').add({
+          recipientId: participantId,
+          senderId,
+          message: message,
+          timestamp: new Date(),
+          read: false,
+        });
+      }
+    });
+
+  await Promise.all(notifications);
+};
+
 // Add Participants to Group Chat
 exports.addParticipants = async (req, res, next) => {
-  const { conversationId, newParticipants, userId } = req.body;
+  const { conversationId, newParticipants } = req.body;
 
   try {
     const conversationDoc = await admin.firestore().collection('conversations').doc(conversationId).get();
@@ -120,27 +152,9 @@ exports.addParticipants = async (req, res, next) => {
       return next(ApiError.notFound('Conversation not found'));
     }
 
-    const conversation = conversationDoc.data();
-
-    // Only owners or admins with permission can add participants
-    const admin = conversation.admins.find((admin) => admin.userId === userId);
-    if (!conversation.owners.includes(userId) && (!admin || !admin.permissions.includes('ADD_PARTICIPANTS'))) {
-      return next(ApiError.forbidden('Only owners or admins with permission can add participants'));
-    }
-
-    // Set default permissions for new participants
-    const newParticipantsWithPermissions = newParticipants.map(participantId => ({
-      userId: participantId,
-      permissions: {
-        canSendMessages: true,
-        canDeleteOwnMessages: true,
-        canLeaveConversation: true,
-      },
-    }));
-
     // Update participants in Firestore
     await admin.firestore().collection('conversations').doc(conversationId).update({
-      participants: admin.firestore.FieldValue.arrayUnion(...newParticipantsWithPermissions),
+      participants: admin.firestore.FieldValue.arrayUnion(...newParticipants),
     });
 
     res.status(200).json({ message: 'Participants added successfully' });
@@ -151,20 +165,12 @@ exports.addParticipants = async (req, res, next) => {
 
 // Remove Participants from Group Chat
 exports.removeParticipants = async (req, res, next) => {
-  const { conversationId, participantsToRemove, userId } = req.body;
+  const { conversationId, participantsToRemove } = req.body;
 
   try {
     const conversationDoc = await admin.firestore().collection('conversations').doc(conversationId).get();
     if (!conversationDoc.exists) {
       return next(ApiError.notFound('Conversation not found'));
-    }
-
-    const conversation = conversationDoc.data();
-
-    // Only owners or admins with permission can remove participants
-    const admin = conversation.admins.find((admin) => admin.userId === userId);
-    if (!conversation.owners.includes(userId) && (!admin || !admin.permissions.includes('REMOVE_PARTICIPANTS'))) {
-      return next(ApiError.forbidden('Only owners or admins with permission can remove participants'));
     }
 
     // Update participants in Firestore
@@ -178,9 +184,9 @@ exports.removeParticipants = async (req, res, next) => {
   }
 };
 
-// Set Participant Permissions
-exports.setParticipantPermissions = async (req, res, next) => {
-  const { conversationId, participantId, permissions, userId } = req.body;
+// Delete Conversation and Admin Handling
+exports.deleteConversation = async (req, res, next) => {
+  const { conversationId, userId } = req.body;
 
   try {
     const conversationDoc = await admin.firestore().collection('conversations').doc(conversationId).get();
@@ -189,35 +195,58 @@ exports.setParticipantPermissions = async (req, res, next) => {
     }
 
     const conversation = conversationDoc.data();
+    // Remove the user from the conversation
+    await admin.firestore().collection('conversations').doc(conversationId).update({
+      participants: admin.firestore.FieldValue.arrayRemove(userId),
+    });
 
-    // Only owners or admins with permission can change participant permissions
-    const admin = conversation.admins.find((admin) => admin.userId === userId);
-    if (!conversation.owners.includes(userId) && (!admin || !admin.permissions.includes('SET_PARTICIPANT_PERMISSIONS'))) {
-      return next(ApiError.forbidden('Only owners or admins with permission can set participant permissions'));
+    const updatedConversation = await admin.firestore().collection('conversations').doc(conversationId).get();
+    const { participants, admins, type } = updatedConversation.data();
+
+    // If direct conversation and one participant left, delete the conversation
+    if (type === 'direct' && participants.length <= 1) {
+      await deleteEntireConversation(conversationId);
+      return res.status(200).json({ message: 'Direct conversation deleted as both participants are removed' });
     }
 
-    // Find participant and update permissions
-    const updatedParticipants = conversation.participants.map(participant => {
-      if (participant.userId === participantId) {
-        return { ...participant, permissions };
-      }
-      return participant;
-    });
+    // If only two admins remain and one is removed, delete the conversation
+    if (admins.includes(userId) && admins.length <= 2) {
+      await deleteEntireConversation(conversationId);
+      return res.status(200).json({ message: 'Conversation deleted as only two admins remain and one left' });
+    }
 
-    // Update participants in Firestore
-    await admin.firestore().collection('conversations').doc(conversationId).update({
-      participants: updatedParticipants,
-    });
-
-    res.status(200).json({ message: 'Participant permissions updated successfully' });
+    res.status(200).json({ message: 'User removed from conversation' });
   } catch (error) {
-    next(ApiError.internal('Error setting participant permissions', error.message));
+    next(ApiError.internal('Error deleting conversation', error.message));
   }
 };
 
-// Rename Conversation
-exports.renameConversation = async (req, res, next) => {
-  const { conversationId, newName, userId } = req.body;
+// Helper function to delete an entire conversation
+const deleteEntireConversation = async (conversationId) => {
+  try {
+    // Delete all messages in the conversation
+    const messagesSnapshot = await admin.firestore().collection('conversations').doc(conversationId).collection('messages').get();
+    const batch = admin.firestore().batch();
+
+    messagesSnapshot.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+
+    // Delete the conversation itself
+    batch.delete(admin.firestore().collection('conversations').doc(conversationId));
+
+    // Commit the batch delete
+    await batch.commit();
+
+    console.log(`Conversation ${conversationId} deleted successfully`);
+  } catch (error) {
+    console.error(`Error deleting conversation ${conversationId}:`, error);
+  }
+};
+
+// Set Group Admin
+exports.setGroupAdmin = async (req, res, next) => {
+  const { conversationId, userId } = req.body;
 
   try {
     const conversationDoc = await admin.firestore().collection('conversations').doc(conversationId).get();
@@ -225,14 +254,22 @@ exports.renameConversation = async (req, res, next) => {
       return next(ApiError.notFound('Conversation not found'));
     }
 
-    const conversation = conversationDoc.data();
+    // Update the admin list in Firestore
+    await admin.firestore().collection('conversations').doc(conversationId).update({
+      admins: admin.firestore.FieldValue.arrayUnion(userId),
+    });
 
-    // Only owners or admins with permission can rename the conversation
-    const admin = conversation.admins.find((admin) => admin.userId === userId);
-    if (!conversation.owners.includes(userId) && (!admin || !admin.permissions.includes('RENAME_CONVERSATION'))) {
-      return next(ApiError.forbidden('Only owners or admins with permission can rename the conversation'));
-    }
+    res.status(200).json({ message: 'User set as group admin successfully' });
+  } catch (error) {
+    next(ApiError.internal('Error setting group admin', error.message));
+  }
+};
 
+// Rename Conversation/Group Chat
+exports.renameConversation = async (req, res, next) => {
+  const { conversationId, newName } = req.body;
+
+  try {
     await admin.firestore().collection('conversations').doc(conversationId).update({
       name: newName,
     });
@@ -245,22 +282,9 @@ exports.renameConversation = async (req, res, next) => {
 
 // Pin/Unpin Messages
 exports.pinMessage = async (req, res, next) => {
-  const { conversationId, messageId, pin, userId } = req.body;
+  const { conversationId, messageId, pin } = req.body;
 
   try {
-    const conversationDoc = await admin.firestore().collection('conversations').doc(conversationId).get();
-    if (!conversationDoc.exists) {
-      return next(ApiError.notFound('Conversation not found'));
-    }
-
-    const conversation = conversationDoc.data();
-
-    // Only owners or admins with permission can pin/unpin messages
-    const admin = conversation.admins.find((admin) => admin.userId === userId);
-    if (!conversation.owners.includes(userId) && (!admin || !admin.permissions.includes('PIN_MESSAGE'))) {
-      return next(ApiError.forbidden('Only owners or admins with permission can pin/unpin messages'));
-    }
-
     await admin.firestore().collection('conversations').doc(conversationId).update({
       pinnedMessages: pin
         ? admin.firestore.FieldValue.arrayUnion(messageId)
@@ -270,5 +294,25 @@ exports.pinMessage = async (req, res, next) => {
     res.status(200).json({ message: `Message ${pin ? 'pinned' : 'unpinned'} successfully` });
   } catch (error) {
     next(ApiError.internal(`Error ${pin ? 'pinning' : 'unpinning'} message`, error.message));
+  }
+};
+
+// Clear Conversation
+exports.clearConversation = async (req, res, next) => {
+  const { conversationId } = req.body;
+
+  try {
+    const messagesSnapshot = await admin.firestore().collection('conversations').doc(conversationId).collection('messages').get();
+    const batch = admin.firestore().batch();
+
+    messagesSnapshot.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+
+    await batch.commit();
+
+    res.status(200).json({ message: 'Conversation cleared successfully' });
+  } catch (error) {
+    next(ApiError.internal('Error clearing conversation', error.message));
   }
 };
