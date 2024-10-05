@@ -127,10 +127,8 @@ const handleConversationCommands = async () => {
         'Create Conversation',
         'Rename Conversation',
         'Add Participants',
-        'Remove Participants',
         'Delete Conversation',
         'Pin Message',
-        'Set Participant Permissions',
         'Back',
       ],
     },
@@ -138,25 +136,19 @@ const handleConversationCommands = async () => {
 
   switch (conversationCommand) {
     case 'Create Conversation':
-      await conversationCommands.createConversationCommand();
+      await conversationCommands.createConversation();
       break;
     case 'Rename Conversation':
-      await conversationCommands.renameConversationCommand();
+      await conversationCommands.renameConversation();
       break;
     case 'Add Participants':
-      await conversationCommands.addParticipantsCommand();
-      break;
-    case 'Remove Participants':
-      await conversationCommands.removeParticipantsCommand();
+      await conversationCommands.addParticipants();
       break;
     case 'Delete Conversation':
-      await conversationCommands.deleteConversationCommand();
+      await conversationCommands.deleteConversation();
       break;
     case 'Pin Message':
-      await conversationCommands.pinMessageCommand();
-      break;
-    case 'Set Participant Permissions':
-      await conversationCommands.setParticipantPermissionsCommand();
+      await conversationCommands.pinMessage();
       break;
     case 'Back':
       return;
@@ -173,6 +165,9 @@ const handleEmployeeCommands = async () => {
         'Delete User',
         'Grant Free Access',
         'Get Platform Stats',
+        'Upload Conversation Profile Photo',
+        'Pin Message',
+        'Rename Conversation',
         'Back',
       ],
     },
@@ -180,13 +175,22 @@ const handleEmployeeCommands = async () => {
 
   switch (employeeCommand) {
     case 'Delete User':
-      await employeeCommands.deleteUserCommand();
+      await employeeCommands.deleteUser();
       break;
     case 'Grant Free Access':
-      await employeeCommands.grantFreeAccessCommand();
+      await employeeCommands.grantFreeAccess();
       break;
     case 'Get Platform Stats':
-      await employeeCommands.getPlatformStatsCommand();
+      await employeeCommands.getPlatformStats();
+      break;
+    case 'Upload Conversation Profile Photo':
+      await employeeCommands.uploadConversationProfilePhoto();
+      break;
+    case 'Pin Message':
+      await employeeCommands.pinMessage();
+      break;
+    case 'Rename Conversation':
+      await employeeCommands.renameConversation();
       break;
     case 'Back':
       return;
@@ -213,22 +217,22 @@ const handleMessageCommands = async () => {
 
   switch (messageCommand) {
     case 'Send Message':
-      await messageCommands.sendMessageCommand();
+      await messageCommands.sendMessage();
       break;
     case 'Edit Message':
-      await messageCommands.editMessageCommand();
+      await messageCommands.editMessage();
       break;
     case 'Delete Message':
-      await messageCommands.deleteMessageCommand();
+      await messageCommands.deleteMessage();
       break;
     case 'Upload and Send Image':
-      await messageCommands.uploadAndSendImageCommand();
+      await messageCommands.uploadAndSendImage();
       break;
     case 'Update Read Receipts':
-      await messageCommands.updateReadReceiptsCommand();
+      await messageCommands.updateReadReceipts();
       break;
     case 'Typing Indicator':
-      await messageCommands.typingIndicatorCommand();
+      await messageCommands.typingIndicator();
       break;
     case 'Back':
       return;
@@ -252,13 +256,13 @@ const handleNotificationCommands = async () => {
 
   switch (notificationCommand) {
     case 'Send Notification':
-      await notificationCommands.sendNotificationCommand();
+      await notificationCommands.sendNotification();
       break;
     case 'Get User Notifications':
-      await notificationCommands.getUserNotificationsCommand();
+      await notificationCommands.getUserNotifications();
       break;
     case 'Mark Notification as Read':
-      await notificationCommands.markNotificationAsReadCommand();
+      await notificationCommands.markNotificationAsRead();
       break;
     case 'Back':
       return;
@@ -283,16 +287,16 @@ const handleProfileCommands = async () => {
 
   switch (profileCommand) {
     case 'Get Profile':
-      await profileCommands.getProfileCommand();
+      await profileCommands.getProfile();
       break;
     case 'Update Profile':
-      await profileCommands.updateProfileCommand();
+      await profileCommands.updateProfile();
       break;
     case 'Upload Profile Photo':
-      await profileCommands.uploadProfilePhotoCommand();
+      await profileCommands.uploadProfilePhoto();
       break;
     case 'Search Users by CypherTag':
-      await profileCommands.searchUsersCommand();
+      await profileCommands.searchUsers();
       break;
     case 'Back':
       return;
@@ -316,13 +320,13 @@ const handleUtilityCommands = async () => {
 
   switch (utilityCommand) {
     case 'Show Log Files':
-      await utilityCommands.showLogFilesCommand();
+      await utilityCommands.showLogFiles();
       break;
     case 'View Specific Log File':
-      await utilityCommands.viewLogFileCommand();
+      await utilityCommands.viewLogFile();
       break;
     case 'List All Commands':
-      await utilityCommands.listCommandsCommand();
+      await utilityCommands.listCommands();
       break;
     case 'Back':
       return;
