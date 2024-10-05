@@ -1,12 +1,12 @@
-const admin = require('firebase-admin');
-const crypto = require('crypto');
-const ApiError = require('../utils/ApiError');
+const admin = require("firebase-admin");
+const crypto = require("crypto");
+const ApiError = require("../utils/ApiError");
 
 // AES Encryption Helper
 const encryptMessage = (message, secretKey) => {
-  const cipher = crypto.createCipher('aes-256-cbc', secretKey);
-  let encrypted = cipher.update(message, 'utf8', 'hex');
-  encrypted += cipher.final('hex');
+  const cipher = crypto.createCipher("aes-256-cbc", secretKey);
+  let encrypted = cipher.update(message, "utf8", "hex");
+  encrypted += cipher.final("hex");
   return encrypted;
 };
 
@@ -21,12 +21,19 @@ exports.sendMessage = async (req, res, next) => {
     const timestamp = new Date();
 
     // Store message in Firestore
-    const newMessage = await admin.firestore().collection('conversations').doc(conversationId).collection('messages').add({
-      senderId,
-      message: encryptedMessage,
-      timestamp,
-      selfDestructTime: selfDestructTime ? timestamp.getTime() + selfDestructTime : null,
-    });
+    const newMessage = await admin
+      .firestore()
+      .collection("conversations")
+      .doc(conversationId)
+      .collection("messages")
+      .add({
+        senderId,
+        message: encryptedMessage,
+        timestamp,
+        selfDestructTime: selfDestructTime
+          ? timestamp.getTime() + selfDestructTime
+          : null,
+      });
 
     // Store message in Firebase Realtime Database for real-time syncing
     const messageData = {
@@ -34,14 +41,19 @@ exports.sendMessage = async (req, res, next) => {
       senderId,
       message: encryptedMessage,
       timestamp: timestamp.toISOString(),
-      selfDestructTime: selfDestructTime ? timestamp.getTime() + selfDestructTime : null,
+      selfDestructTime: selfDestructTime
+        ? timestamp.getTime() + selfDestructTime
+        : null,
     };
 
-    await admin.database().ref(`/conversations/${conversationId}/messages`).push(messageData);
+    await admin
+      .database()
+      .ref(`/conversations/${conversationId}/messages`)
+      .push(messageData);
 
-    res.status(201).json({ message: 'Message sent', messageId: newMessage.id });
+    res.status(201).json({ message: "Message sent", messageId: newMessage.id });
   } catch (error) {
-    next(ApiError.internal('Error sending message', error.message));
+    next(ApiError.internal("Error sending message", error.message));
   }
 };
 
@@ -51,20 +63,25 @@ exports.getMessages = async (req, res, next) => {
 
   try {
     // Fetch messages from Firestore
-    const messagesSnapshot = await admin.firestore().collection('conversations').doc(conversationId).collection('messages').get();
+    const messagesSnapshot = await admin
+      .firestore()
+      .collection("conversations")
+      .doc(conversationId)
+      .collection("messages")
+      .get();
 
     if (messagesSnapshot.empty) {
-      return res.status(404).json({ message: 'No messages found' });
+      return res.status(404).json({ message: "No messages found" });
     }
 
-    const messages = messagesSnapshot.docs.map(doc => ({
+    const messages = messagesSnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     }));
 
     res.status(200).json({ messages });
   } catch (error) {
-    next(ApiError.internal('Error fetching messages', error.message));
+    next(ApiError.internal("Error fetching messages", error.message));
   }
 };
 
@@ -76,23 +93,33 @@ exports.editMessage = async (req, res, next) => {
     const secretKey = process.env.MESSAGE_SECRET_KEY;
     const encryptedMessage = encryptMessage(newMessage, secretKey);
 
-    await admin.firestore().collection('conversations').doc(conversationId).collection('messages').doc(messageId).update({
-      message: encryptedMessage,
-      editedAt: new Date(),
-    });
+    await admin
+      .firestore()
+      .collection("conversations")
+      .doc(conversationId)
+      .collection("messages")
+      .doc(messageId)
+      .update({
+        message: encryptedMessage,
+        editedAt: new Date(),
+      });
 
-    const messageRef = admin.database().ref(`/conversations/${conversationId}/messages`).orderByChild('messageId').equalTo(messageId);
-    const snapshot = await messageRef.once('value');
-    snapshot.forEach(childSnapshot => {
+    const messageRef = admin
+      .database()
+      .ref(`/conversations/${conversationId}/messages`)
+      .orderByChild("messageId")
+      .equalTo(messageId);
+    const snapshot = await messageRef.once("value");
+    snapshot.forEach((childSnapshot) => {
       childSnapshot.ref.update({
         message: encryptedMessage,
         editedAt: new Date().toISOString(),
       });
     });
 
-    res.status(200).json({ message: 'Message edited successfully' });
+    res.status(200).json({ message: "Message edited successfully" });
   } catch (error) {
-    next(ApiError.internal('Error editing message', error.message));
+    next(ApiError.internal("Error editing message", error.message));
   }
 };
 
@@ -102,24 +129,34 @@ exports.deleteMessage = async (req, res, next) => {
 
   try {
     // Soft delete by marking the message as deleted in Firestore
-    await admin.firestore().collection('conversations').doc(conversationId).collection('messages').doc(messageId).update({
-      deleted: true,
-      deletedAt: new Date(),
-    });
+    await admin
+      .firestore()
+      .collection("conversations")
+      .doc(conversationId)
+      .collection("messages")
+      .doc(messageId)
+      .update({
+        deleted: true,
+        deletedAt: new Date(),
+      });
 
     // Soft delete the message in Realtime Database
-    const messageRef = admin.database().ref(`/conversations/${conversationId}/messages`).orderByChild('messageId').equalTo(messageId);
-    const snapshot = await messageRef.once('value');
-    snapshot.forEach(childSnapshot => {
+    const messageRef = admin
+      .database()
+      .ref(`/conversations/${conversationId}/messages`)
+      .orderByChild("messageId")
+      .equalTo(messageId);
+    const snapshot = await messageRef.once("value");
+    snapshot.forEach((childSnapshot) => {
       childSnapshot.ref.update({
         deleted: true,
         deletedAt: new Date().toISOString(),
       });
     });
 
-    res.status(200).json({ message: 'Message deleted successfully' });
+    res.status(200).json({ message: "Message deleted successfully" });
   } catch (error) {
-    next(ApiError.internal('Error deleting message', error.message));
+    next(ApiError.internal("Error deleting message", error.message));
   }
 };
 
@@ -128,25 +165,44 @@ exports.cleanupSelfDestructingMessages = async () => {
   try {
     const now = Date.now();
 
-    const conversationsSnapshot = await admin.firestore().collection('conversations').get();
-    const conversations = conversationsSnapshot.docs.map(doc => doc.id);
+    const conversationsSnapshot = await admin
+      .firestore()
+      .collection("conversations")
+      .get();
+    const conversations = conversationsSnapshot.docs.map((doc) => doc.id);
 
     // Iterate through all conversations and clean up self-destructing messages
     for (const conversationId of conversations) {
-      const messagesSnapshot = await admin.firestore().collection('conversations').doc(conversationId).collection('messages').where('selfDestructTime', '<=', now).get();
+      const messagesSnapshot = await admin
+        .firestore()
+        .collection("conversations")
+        .doc(conversationId)
+        .collection("messages")
+        .where("selfDestructTime", "<=", now)
+        .get();
 
       messagesSnapshot.forEach(async (doc) => {
-        await admin.firestore().collection('conversations').doc(conversationId).collection('messages').doc(doc.id).delete();
-        const messageRef = admin.database().ref(`/conversations/${conversationId}/messages`).orderByChild('messageId').equalTo(doc.id);
-        const snapshot = await messageRef.once('value');
-        snapshot.forEach(childSnapshot => {
+        await admin
+          .firestore()
+          .collection("conversations")
+          .doc(conversationId)
+          .collection("messages")
+          .doc(doc.id)
+          .delete();
+        const messageRef = admin
+          .database()
+          .ref(`/conversations/${conversationId}/messages`)
+          .orderByChild("messageId")
+          .equalTo(doc.id);
+        const snapshot = await messageRef.once("value");
+        snapshot.forEach((childSnapshot) => {
           childSnapshot.ref.remove();
         });
       });
     }
-    console.log('Self-destructing messages cleaned up');
+    console.log("Self-destructing messages cleaned up");
   } catch (error) {
-    console.error('Error cleaning up self-destructing messages:', error);
+    console.error("Error cleaning up self-destructing messages:", error);
   }
 };
 
@@ -155,13 +211,16 @@ exports.updateReadReceipts = async (req, res, next) => {
   const { conversationId, userId } = req.body;
 
   try {
-    await admin.database().ref(`/conversations/${conversationId}/readReceipts/${userId}`).set({
-      readAt: new Date().toISOString(),
-    });
+    await admin
+      .database()
+      .ref(`/conversations/${conversationId}/readReceipts/${userId}`)
+      .set({
+        readAt: new Date().toISOString(),
+      });
 
-    res.status(200).json({ message: 'Read receipts updated successfully' });
+    res.status(200).json({ message: "Read receipts updated successfully" });
   } catch (error) {
-    next(ApiError.internal('Error updating read receipts', error.message));
+    next(ApiError.internal("Error updating read receipts", error.message));
   }
 };
 
@@ -170,14 +229,17 @@ exports.typingIndicator = async (req, res, next) => {
   const { conversationId, userId, isTyping } = req.body;
 
   try {
-    await admin.database().ref(`/conversations/${conversationId}/typingIndicators/${userId}`).set({
-      isTyping,
-      timestamp: new Date().toISOString(),
-    });
+    await admin
+      .database()
+      .ref(`/conversations/${conversationId}/typingIndicators/${userId}`)
+      .set({
+        isTyping,
+        timestamp: new Date().toISOString(),
+      });
 
-    res.status(200).json({ message: 'Typing indicator updated successfully' });
+    res.status(200).json({ message: "Typing indicator updated successfully" });
   } catch (error) {
-    next(ApiError.internal('Error updating typing indicator', error.message));
+    next(ApiError.internal("Error updating typing indicator", error.message));
   }
 };
 
@@ -187,7 +249,7 @@ exports.uploadAndSendImage = async (req, res, next) => {
   const file = req.file;
 
   if (!file) {
-    return next(ApiError.badRequest('No file uploaded'));
+    return next(ApiError.badRequest("No file uploaded"));
   }
 
   try {
@@ -201,17 +263,22 @@ exports.uploadAndSendImage = async (req, res, next) => {
       },
     });
 
-    blobStream.on('error', (error) => {
-      next(ApiError.internal('Error uploading image', error.message));
+    blobStream.on("error", (error) => {
+      next(ApiError.internal("Error uploading image", error.message));
     });
 
-    blobStream.on('finish', async () => {
+    blobStream.on("finish", async () => {
       const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileUpload.name}`;
-      const newMessage = await admin.firestore().collection('conversations').doc(conversationId).collection('messages').add({
-        senderId,
-        imageUrl: publicUrl,
-        sentAt: new Date(),
-      });
+      const newMessage = await admin
+        .firestore()
+        .collection("conversations")
+        .doc(conversationId)
+        .collection("messages")
+        .add({
+          senderId,
+          imageUrl: publicUrl,
+          sentAt: new Date(),
+        });
 
       const messageData = {
         messageId: newMessage.id,
@@ -220,13 +287,20 @@ exports.uploadAndSendImage = async (req, res, next) => {
         sentAt: new Date().toISOString(),
       };
 
-      await admin.database().ref(`/conversations/${conversationId}/messages`).push(messageData);
+      await admin
+        .database()
+        .ref(`/conversations/${conversationId}/messages`)
+        .push(messageData);
 
-      res.status(201).json({ message: 'Image uploaded and message sent successfully', messageId: newMessage.id, imageUrl: publicUrl });
+      res.status(201).json({
+        message: "Image uploaded and message sent successfully",
+        messageId: newMessage.id,
+        imageUrl: publicUrl,
+      });
     });
 
     blobStream.end(file.buffer);
   } catch (error) {
-    next(ApiError.internal('Error uploading image', error.message));
+    next(ApiError.internal("Error uploading image", error.message));
   }
 };

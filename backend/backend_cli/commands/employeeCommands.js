@@ -1,184 +1,71 @@
-const { deleteUser, grantFreeAccess, getPlatformStats, uploadConversationProfilePhoto, pinMessage, renameConversation } = require('../../src/controllers/employeeController'); // Import backend functions directly
-const { promptForInput } = require('../utils/promptHelper');
-const logger = require('../utils/logger');
-require('dotenv').config();
-const fs = require('fs');
+// employeeCommands.js
 
-// Delete a User
-const deleteUserCommand = async () => {
-  try {
-    const uid = await promptForInput('Enter User ID to delete:');
+const inquirer = require('inquirer');
+const path = require('path');
+const { deleteUser, grantFreeAccess, getPlatformStats } = require(path.resolve(__dirname, '../../src/controllers/employeeController'));
 
-    const req = { params: { uid } };
-    const res = {
-      status: (code) => ({
-        json: (data) => {
-          console.log(`Status: ${code}, Response:`, data);
-        },
-      }),
-    };
-    const next = (error) => {
-      if (error) {
-        throw error;
-      }
-    };
-
-    await deleteUser(req, res, next);
-    logger.logInfo('User deleted successfully');
-  } catch (error) {
-    console.error('Failed to delete user:', error.message);
-    logger.logCLIError('Deleting user failed', error);
-  }
+// Delete a user account
+const deleteUserAccount = async () => {
+  const { userId } = await inquirer.prompt([
+    { type: 'input', name: 'userId', message: 'Enter userId to delete:' },
+  ]);
+  await deleteUser({ params: { uid: userId } }, { status: (code) => ({ json: console.log }) }, console.error);
 };
 
-// Grant Free Access
-const grantFreeAccessCommand = async () => {
-  try {
-    const userId = await promptForInput('Enter User ID to grant free access:');
-    const freeChannels = await promptForInput('Enter number of free channels:');
-    const freeGroups = await promptForInput('Enter number of free groups:');
-
-    const req = { body: { userId, freeChannels, freeGroups } };
-    const res = {
-      status: (code) => ({
-        json: (data) => {
-          console.log(`Status: ${code}, Response:`, data);
-        },
-      }),
-    };
-    const next = (error) => {
-      if (error) {
-        throw error;
-      }
-    };
-
-    await grantFreeAccess(req, res, next);
-    logger.logInfo('Free access granted successfully');
-  } catch (error) {
-    console.error('Failed to grant free access:', error.message);
-    logger.logCLIError('Granting free access failed', error);
-  }
+// Grant free channel/group chat creation
+const grantFreeCreation = async () => {
+  const { userId, freeChannels, freeGroups } = await inquirer.prompt([
+    { type: 'input', name: 'userId', message: 'Enter userId to grant free channel/group chat creation:' },
+    { type: 'input', name: 'freeChannels', message: 'Enter number of free channels:' },
+    { type: 'input', name: 'freeGroups', message: 'Enter number of free groups:' },
+  ]);
+  await grantFreeAccess({ body: { userId, freeChannels, freeGroups } }, { status: (code) => ({ json: console.log }) }, console.error);
 };
 
-// Get Platform Statistics
-const getPlatformStatsCommand = async () => {
-  try {
-    const req = {};
-    const res = {
-      status: (code) => ({
-        json: (data) => {
-          console.log(`Status: ${code}, Response:`, data);
-        },
-      }),
-    };
-    const next = (error) => {
-      if (error) {
-        throw error;
-      }
-    };
-
-    await getPlatformStats(req, res, next);
-    logger.logInfo('Platform statistics fetched successfully');
-  } catch (error) {
-    console.error('Failed to fetch platform statistics:', error.message);
-    logger.logCLIError('Fetching platform statistics failed', error);
-  }
+// View total users, messages, and conversations
+const viewStats = async () => {
+  await getPlatformStats({}, { status: (code) => ({ json: console.log }) }, console.error);
 };
 
-// Upload Conversation Profile Photo
-const uploadConversationProfilePhotoCommand = async () => {
-  try {
-    const conversationId = await promptForInput('Enter Conversation ID:');
-    const imagePath = await promptForInput('Enter path to the image file:');
+// Menu to choose command
+const menu = async () => {
+  const { option } = await inquirer.prompt([
+    {
+      type: 'list',
+      name: 'option',
+      message: 'Employee Commands:',
+      choices: [
+        'Delete User Account',
+        'Grant Free Channel/Group Chat Creation',
+        'View Total Users, Messages, and Conversations',
+        'Exit'
+      ],
+    },
+  ]);
 
-    if (!fs.existsSync(imagePath)) {
-      console.error('Image file not found at the specified path');
+  switch (option) {
+    case 'Delete User Account':
+      await deleteUserAccount();
+      break;
+    case 'Grant Free Channel/Group Chat Creation':
+      await grantFreeCreation();
+      break;
+    case 'View Total Users, Messages, and Conversations':
+      await viewStats();
+      break;
+    case 'Exit':
+      console.log('Exiting Employee Commands');
       return;
-    }
-
-    const req = { params: { conversationId }, file: { path: imagePath, fieldName: 'profilePhoto' } };
-    const res = {
-      status: (code) => ({
-        json: (data) => {
-          console.log(`Status: ${code}, Response:`, data);
-        },
-      }),
-    };
-    const next = (error) => {
-      if (error) {
-        throw error;
-      }
-    };
-
-    await uploadConversationProfilePhoto(req, res, next);
-    logger.logInfo('Conversation profile photo uploaded successfully');
-  } catch (error) {
-    console.error('Failed to upload profile photo:', error.message);
-    logger.logCLIError('Uploading conversation profile photo failed', error);
+    default:
+      console.log('Invalid option');
   }
-};
 
-// Pin a Message
-const pinMessageCommand = async () => {
-  try {
-    const conversationId = await promptForInput('Enter Conversation ID:');
-    const messageId = await promptForInput('Enter Message ID to pin:');
-
-    const req = { body: { conversationId, messageId } };
-    const res = {
-      status: (code) => ({
-        json: (data) => {
-          console.log(`Status: ${code}, Response:`, data);
-        },
-      }),
-    };
-    const next = (error) => {
-      if (error) {
-        throw error;
-      }
-    };
-
-    await pinMessage(req, res, next);
-    logger.logInfo('Message pinned successfully');
-  } catch (error) {
-    console.error('Failed to pin message:', error.message);
-    logger.logCLIError('Pinning message failed', error);
-  }
-};
-
-// Rename a Conversation
-const renameConversationCommand = async () => {
-  try {
-    const conversationId = await promptForInput('Enter Conversation ID:');
-    const newName = await promptForInput('Enter new conversation name:');
-
-    const req = { body: { conversationId, newName } };
-    const res = {
-      status: (code) => ({
-        json: (data) => {
-          console.log(`Status: ${code}, Response:`, data);
-        },
-      }),
-    };
-    const next = (error) => {
-      if (error) {
-        throw error;
-      }
-    };
-
-    await renameConversation(req, res, next);
-    logger.logInfo('Conversation renamed successfully');
-  } catch (error) {
-    console.error('Failed to rename conversation:', error.message);
-    logger.logCLIError('Renaming conversation failed', error);
-  }
+  await menu(); // Show menu again after completing a command
 };
 
 module.exports = {
-  deleteUserCommand,
-  grantFreeAccessCommand,
-  getPlatformStatsCommand,
-  uploadConversationProfilePhotoCommand,
-  pinMessageCommand,
-  renameConversationCommand,
+  deleteUserAccount,
+  grantFreeCreation,
+  viewStats,
+  menu
 };

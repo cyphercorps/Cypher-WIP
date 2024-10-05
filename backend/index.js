@@ -52,6 +52,7 @@ const loadRoutes = () => {
       const routePath = `/api/${file.replace('.js', '')}`;
       app.use(routePath, route);
       logger.info(`Loaded route: ${routePath}`);
+      console.log(`Loaded route: ${routePath}`); // Debugging log
     }
   });
 };

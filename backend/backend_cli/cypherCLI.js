@@ -127,8 +127,12 @@ const handleConversationCommands = async () => {
         'Create Conversation',
         'Rename Conversation',
         'Add Participants',
+        'Remove Participants',
         'Delete Conversation',
-        'Pin Message',
+        'Set Group Admin',
+        'Pin/Unpin Message',
+        'Clear Conversation',
+        'Leave Conversation',
         'Back',
       ],
     },
@@ -144,11 +148,23 @@ const handleConversationCommands = async () => {
     case 'Add Participants':
       await conversationCommands.addParticipants();
       break;
+    case 'Remove Participants':
+      await conversationCommands.removeParticipants();
+      break;
     case 'Delete Conversation':
       await conversationCommands.deleteConversation();
       break;
-    case 'Pin Message':
+    case 'Set Group Admin':
+      await conversationCommands.setGroupAdmin();
+      break;
+    case 'Pin/Unpin Message':
       await conversationCommands.pinMessage();
+      break;
+    case 'Clear Conversation':
+      await conversationCommands.clearConversation();
+      break;
+    case 'Leave Conversation':
+      await conversationCommands.leaveConversation();
       break;
     case 'Back':
       return;
@@ -165,9 +181,6 @@ const handleEmployeeCommands = async () => {
         'Delete User',
         'Grant Free Access',
         'Get Platform Stats',
-        'Upload Conversation Profile Photo',
-        'Pin Message',
-        'Rename Conversation',
         'Back',
       ],
     },
@@ -181,16 +194,7 @@ const handleEmployeeCommands = async () => {
       await employeeCommands.grantFreeAccess();
       break;
     case 'Get Platform Stats':
-      await employeeCommands.getPlatformStats();
-      break;
-    case 'Upload Conversation Profile Photo':
-      await employeeCommands.uploadConversationProfilePhoto();
-      break;
-    case 'Pin Message':
-      await employeeCommands.pinMessage();
-      break;
-    case 'Rename Conversation':
-      await employeeCommands.renameConversation();
+      await employeeCommands.viewStats();
       break;
     case 'Back':
       return;

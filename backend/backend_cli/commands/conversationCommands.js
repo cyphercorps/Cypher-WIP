@@ -1,154 +1,219 @@
-const { createConversation, renameConversation, addParticipants, deleteConversation, pinMessage } = require('../../src/controllers/conversationController'); // Import backend functions directly
-const { promptForInput } = require('../utils/promptHelper');
-const logger = require('../utils/logger');
-require('dotenv').config();
+// conversationCommands.js
 
-// Create a new conversation
-const createConversationCommand = async () => {
+const readline = require('readline');
+const axios = require('axios');
+
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+
+const baseUrl = 'http://localhost:3000/api/conversations';
+
+// Utility function to handle API requests
+const makeRequest = async (method, url, data = null) => {
   try {
-    const userId = await promptForInput('Enter your user ID:');
-    const participants = await promptForInput('Enter participants (comma-separated IDs):');
-    const type = await promptForInput('Select conversation type (direct, group, channel):');
-
-    const req = { body: { userId, participants: participants.split(',').map((id) => id.trim()), type } };
-    const res = {
-      status: (code) => ({
-        json: (data) => {
-          console.log(`Status: ${code}, Response:`, data);
-        },
-      }),
-    };
-    const next = (error) => {
-      if (error) {
-        throw error;
-      }
-    };
-
-    await createConversation(req, res, next);
-    logger.logInfo('Conversation created successfully');
+    const response = await axios({
+      method,
+      url,
+      data
+    });
+    console.log('Response:', response.data);
   } catch (error) {
-    console.error('Failed to create conversation:', error.message);
-    logger.logCLIError('Conversation creation failed', error);
+    console.error('Error:', error.response ? error.response.data : error.message);
   }
 };
 
-// Rename a conversation
-const renameConversationCommand = async () => {
-  try {
-    const conversationId = await promptForInput('Enter conversation ID:');
-    const newName = await promptForInput('Enter new conversation name:');
-
-    const req = { body: { conversationId, newName } };
-    const res = {
-      status: (code) => ({
-        json: (data) => {
-          console.log(`Status: ${code}, Response:`, data);
-        },
-      }),
-    };
-    const next = (error) => {
-      if (error) {
-        throw error;
-      }
-    };
-
-    await renameConversation(req, res, next);
-    logger.logInfo('Conversation renamed successfully');
-  } catch (error) {
-    console.error('Failed to rename conversation:', error.message);
-    logger.logCLIError('Conversation rename failed', error);
-  }
+// Create a conversation
+const createConversation = () => {
+  rl.question('Enter userId: ', (userId) => {
+    rl.question('Enter participants (comma-separated): ', (participants) => {
+      rl.question('Enter conversation type (direct/group/channel): ', (type) => {
+        makeRequest('post', `${baseUrl}/create`, {
+          userId,
+          participants: participants.split(','),
+          type
+        });
+        rl.close();
+      });
+    });
+  });
 };
 
 // Add participants to a group chat
-const addParticipantsCommand = async () => {
-  try {
-    const conversationId = await promptForInput('Enter conversation ID:');
-    const newParticipants = await promptForInput('Enter new participants (comma-separated IDs):');
+const addParticipants = () => {
+  rl.question('Enter conversationId: ', (conversationId) => {
+    rl.question('Enter participants to add (comma-separated): ', (newParticipants) => {
+      makeRequest('post', `${baseUrl}/add-participants`, {
+        conversationId,
+        newParticipants: newParticipants.split(',')
+      });
+      rl.close();
+    });
+  });
+};
 
-    const req = { body: { conversationId, newParticipants: newParticipants.split(',').map((id) => id.trim()) } };
-    const res = {
-      status: (code) => ({
-        json: (data) => {
-          console.log(`Status: ${code}, Response:`, data);
-        },
-      }),
-    };
-    const next = (error) => {
-      if (error) {
-        throw error;
-      }
-    };
-
-    await addParticipants(req, res, next);
-    logger.logInfo('Participants added to conversation successfully');
-  } catch (error) {
-    console.error('Failed to add participants:', error.message);
-    logger.logCLIError('Adding participants to conversation failed', error);
-  }
+// Remove participants from a group chat
+const removeParticipants = () => {
+  rl.question('Enter conversationId: ', (conversationId) => {
+    rl.question('Enter participants to remove (comma-separated): ', (participantsToRemove) => {
+      makeRequest('post', `${baseUrl}/remove-participants`, {
+        conversationId,
+        participantsToRemove: participantsToRemove.split(',')
+      });
+      rl.close();
+    });
+  });
 };
 
 // Delete a conversation
-const deleteConversationCommand = async () => {
-  try {
-    const conversationId = await promptForInput('Enter conversation ID:');
-    const userId = await promptForInput('Enter user ID who is requesting deletion:');
-
-    const req = { body: { conversationId, userId } };
-    const res = {
-      status: (code) => ({
-        json: (data) => {
-          console.log(`Status: ${code}, Response:`, data);
-        },
-      }),
-    };
-    const next = (error) => {
-      if (error) {
-        throw error;
-      }
-    };
-
-    await deleteConversation(req, res, next);
-    logger.logInfo('Conversation deleted successfully');
-  } catch (error) {
-    console.error('Failed to delete conversation:', error.message);
-    logger.logCLIError('Conversation deletion failed', error);
-  }
+const deleteConversation = () => {
+  rl.question('Enter conversationId: ', (conversationId) => {
+    rl.question('Enter userId (owner): ', (userId) => {
+      makeRequest('delete', `${baseUrl}/delete`, {
+        conversationId,
+        userId
+      });
+      rl.close();
+    });
+  });
 };
 
-// Pin a message in a conversation
-const pinMessageCommand = async () => {
-  try {
-    const conversationId = await promptForInput('Enter conversation ID:');
-    const messageId = await promptForInput('Enter message ID to pin:');
-    const pin = await promptForInput('Do you want to pin this message? (yes/no):');
+// Set a group admin
+const setGroupAdmin = () => {
+  rl.question('Enter conversationId: ', (conversationId) => {
+    rl.question('Enter userId to set as admin: ', (userId) => {
+      makeRequest('post', `${baseUrl}/set-admin`, {
+        conversationId,
+        userId
+      });
+      rl.close();
+    });
+  });
+};
 
-    const req = { body: { conversationId, messageId, pin: pin.toLowerCase() === 'yes' } };
-    const res = {
-      status: (code) => ({
-        json: (data) => {
-          console.log(`Status: ${code}, Response:`, data);
-        },
-      }),
-    };
-    const next = (error) => {
-      if (error) {
-        throw error;
-      }
-    };
+// Rename a conversation
+const renameConversation = () => {
+  rl.question('Enter conversationId: ', (conversationId) => {
+    rl.question('Enter new name for the conversation: ', (newName) => {
+      makeRequest('patch', `${baseUrl}/rename`, {
+        conversationId,
+        newName
+      });
+      rl.close();
+    });
+  });
+};
 
-    await pinMessage(req, res, next);
-    logger.logInfo(`Message ${pin.toLowerCase() === 'yes' ? 'pinned' : 'unpinned'} successfully`);
-  } catch (error) {
-    console.error('Failed to pin/unpin message:', error.message);
-    logger.logCLIError('Pinning/unpinning message failed', error);
+// Pin or unpin a message
+const pinMessage = () => {
+  rl.question('Enter conversationId: ', (conversationId) => {
+    rl.question('Enter messageId: ', (messageId) => {
+      rl.question('Pin or unpin (pin/unpin): ', (action) => {
+        const pin = action.toLowerCase() === 'pin';
+        makeRequest('post', `${baseUrl}/pin-message`, {
+          conversationId,
+          messageId,
+          pin
+        });
+        rl.close();
+      });
+    });
+  });
+};
+
+// Clear all messages in a conversation
+const clearConversation = () => {
+  rl.question('Enter conversationId: ', (conversationId) => {
+    makeRequest('post', `${baseUrl}/clear`, {
+      conversationId
+    });
+    rl.close();
+  });
+};
+
+// Leave a conversation
+const leaveConversation = () => {
+  rl.question('Enter conversationId: ', (conversationId) => {
+    rl.question('Enter userId: ', (userId) => {
+      makeRequest('post', `${baseUrl}/leave`, {
+        conversationId,
+        userId
+      });
+      rl.close();
+    });
+  });
+};
+
+// Menu to choose command
+const menu = async () => {
+  const { option } = await inquirer.prompt([
+    {
+      type: 'list',
+      name: 'option',
+      message: 'Select a conversation command:',
+      choices: [
+        'Create Conversation',
+        'Add Participants',
+        'Remove Participants',
+        'Delete Conversation',
+        'Set Group Admin',
+        'Rename Conversation',
+        'Pin/Unpin Message',
+        'Clear Conversation',
+        'Leave Conversation',
+        'Exit'
+      ],
+    },
+  ]);
+
+  switch (option) {
+    case 'Create Conversation':
+      await createConversation();
+      break;
+    case 'Add Participants':
+      await addParticipants();
+      break;
+    case 'Remove Participants':
+      await removeParticipants();
+      break;
+    case 'Delete Conversation':
+      await deleteConversation();
+      break;
+    case 'Set Group Admin':
+      await setGroupAdmin();
+      break;
+    case 'Rename Conversation':
+      await renameConversation();
+      break;
+    case 'Pin/Unpin Message':
+      await pinMessage();
+      break;
+    case 'Clear Conversation':
+      await clearConversation();
+      break;
+    case 'Leave Conversation':
+      await leaveConversation();
+      break;
+    case 'Exit':
+      console.log('Exiting conversation commands menu...');
+      return;
+    default:
+      console.log('Invalid option');
   }
+
+  await menu();
 };
 
 module.exports = {
-  createConversationCommand,
-  renameConversationCommand,
-  addParticipantsCommand,
-  deleteConversationCommand,
-  pinMessageCommand,
+  menu,
+  createConversation,
+  addParticipants,
+  removeParticipants,
+  deleteConversation,
+  setGroupAdmin,
+  renameConversation,
+  pinMessage,
+  clearConversation,
+  leaveConversation
 };
